@@ -1,0 +1,70 @@
+group 'la.renzhen'
+version '0.0.1-SNAPSHOT'
+
+allprojects {
+    repositories {
+        maven { url "http://maven.aliyun.com/nexus/content/groups/public" }
+        jcenter()
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: "java"
+    apply plugin: "idea"
+
+    ext {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+        [compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+    }
+
+    archivesBaseName = "${rootProject.name}-${project.name}"
+
+    idea {
+        module {
+            downloadSources = true
+            outputDir = file('build/classes/java/main')
+            testOutputDir = file('build/classes/java/test')
+        }
+    }
+
+    jar {
+        manifest {
+            attributes "X-Application-Group": "${rootProject.group}"
+            attributes "X-Application-Name": "${rootProject.name}-${project.name}"
+            attributes "X-Application-Version": "${rootProject.version}"
+            attributes "X-Application-BuildTime": new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS").format(new Date())
+        }
+        enabled = true
+    }
+
+    configurations {
+        optional
+        compile.extendsFrom optional
+    }
+
+    dependencies {
+        compile "com.google.guava:guava:25.1-jre"
+        compile "org.slf4j:slf4j-api:1.7.25"
+        compile "javax.validation:validation-api:2.0.1.Final"
+
+        testCompile "junit:junit:4.12"
+        optional "org.projectlombok:lombok:1.16.20"
+    }
+
+    task sourceJar(type: Jar) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from "${buildDir}/docs/javadoc"
+    }
+
+    artifacts {
+        archives sourceJar
+        archives javadocJar
+    }
+}
