@@ -5,6 +5,7 @@ import la.renzhen.remoting.commons.Pair;
 import la.renzhen.remoting.commons.RemotingHelper;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import la.renzhen.remoting.protocol.RemotingSysResponseCode;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -15,7 +16,11 @@ import java.util.concurrent.*;
  * @version 2019-01-27 11:39
  */
 @Slf4j
-public abstract class RemotingAbstract<Channel> implements Remoting<Channel> {
+public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, RemotingService {
+
+    @Getter
+    private String unique;
+
     /**
      * Semaphore to limit maximum number of on-going asynchronous requests, which protects system memory footprint.
      */
@@ -40,7 +45,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel> {
     /**
      * Executor to feed channel events.
      */
-    protected final ChannelEventExecutor eventExecutor;
+    protected final ChannelEventExecutor<Channel> eventExecutor;
 
     /**
      * The default request processor to use in case there is no exact match in {@link #processorTable} per request code.
@@ -52,17 +57,25 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel> {
      */
     protected List<CommandHook<Channel>> commandHooks = new ArrayList<>();
 
+    private final Timer timer = new Timer("ServerHouseKeepingService", true);
+
     public RemotingAbstract(final int permitsOneway, final int permitsAsync, final int eventMaxSize) {
         this.semaphoreOneway = new Semaphore(permitsOneway, true);
         this.semaphoreAsync = new Semaphore(permitsAsync, true);
         this.eventExecutor = new ChannelEventExecutor(eventMaxSize);
+
+        this.unique = UUID.randomUUID().toString();
+    }
+
+    @Override
+    public Map<String, String> getAttrs() {
+        return new HashMap<>();
     }
 
     @Override
     public void registerChannelEventListener(ChannelEventListener<Channel> channelEventListener) {
         this.eventExecutor.setChannelEventListener(channelEventListener);
     }
-
 
     @Override
     public void registerDefaultProcessor(RequestProcessor<Channel> processor, ExecutorService executor) {
@@ -71,7 +84,17 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel> {
 
     @Override
     public void registerProcessor(int requestCode, RequestProcessor<Channel> processor, ExecutorService executor) {
-        processorTable.put(requestCode, new Pair<>(processor, executor));
+        ExecutorService executorThis = this.selectExecutorService(executor);
+        assert null != executorThis;
+        processorTable.put(requestCode, new Pair<>(processor, executorThis));
+    }
+
+    protected ExecutorService selectExecutorService(ExecutorService executorService) {
+        ExecutorService executorSelector = executorService;
+        if (null == executorService) {
+            executorSelector = this.getCallbackExecutor();
+        }
+        return executorSelector;
     }
 
     /**
@@ -160,7 +183,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel> {
             };
 
             if (pair.getFirst().rejectRequest(ctx)) {
-                final RemotingCommand response = RemotingCommand.error(cmd, RemotingSysResponseCode.BUSY, "[REJECTREQUEST]system busy, start flow control for a while");
+                final RemotingCommand response = RemotingCommand.error(cmd, RemotingSysResponseCode.REJECT, "[REJECTREQUEST]system busy, start flow control for a while");
                 response.setId(requestId).makeResponse();
                 ctx.writeAndFlush(response);
                 return;
@@ -372,6 +395,10 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel> {
         }
     }
 
+    public Pair<RequestProcessor<Channel>, ExecutorService> getProcessor(final int requestCode) {
+        return processorTable.get(requestCode);
+    }
+
     /**
      * <p>
      * This method is periodically invoked to scan and expire deprecated request.
@@ -435,4 +462,35 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel> {
     }
 
 
+    protected void initResponeTimeoutTimer() {
+        this.timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    scanResponseTable();
+                } catch (Throwable e) {
+                    log.error("scanResponseTable exception", e);
+                }
+            }
+        }, TimeUnit.SECONDS.toMillis(5), TimeUnit.SECONDS.toMillis(1));
+    }
+
+    @Override
+    public void startup() {
+        this.startupOther();
+        this.eventExecutor.start();
+        this.initResponeTimeoutTimer();
+        ;
+    }
+
+    protected abstract void startupOther();
+
+    @Override
+    public void shutdown(boolean interrupted) {
+        this.eventExecutor.shutdown();
+        this.shutdownOther(interrupted);
+        this.timer.cancel();
+    }
+
+    protected abstract void shutdownOther(boolean interrupted);
 }

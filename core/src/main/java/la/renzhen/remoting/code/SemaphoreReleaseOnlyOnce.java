@@ -20,6 +20,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SemaphoreReleaseOnlyOnce {
+
     private final AtomicBoolean released = new AtomicBoolean(false);
     private final Semaphore semaphore;
 
