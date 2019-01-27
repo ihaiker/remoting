@@ -1,0 +1,7 @@
+plugins {
+    id 'java'
+}
+
+dependencies {
+    compile "com.alibaba:fastjson:1.2.51"
+}

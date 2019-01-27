@@ -48,9 +48,10 @@ subprojects {
         compile "com.google.guava:guava:25.1-jre"
         compile "org.slf4j:slf4j-api:1.7.25"
         compile "javax.validation:validation-api:2.0.1.Final"
+        compile "org.projectlombok:lombok-utils:1.18.4"
 
         testCompile "junit:junit:4.12"
-        optional "org.projectlombok:lombok:1.16.20"
+        optional "org.projectlombok:lombok:1.18.4"
     }
 
     task sourceJar(type: Jar) {
