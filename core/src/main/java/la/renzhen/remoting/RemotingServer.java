@@ -11,8 +11,6 @@ import java.util.concurrent.ExecutorService;
  */
 public interface RemotingServer<Channel> extends Remoting<Channel>, RemotingService {
 
-    String getServerName();
-
     RemotingChannel<Channel> getChannel(String address);
 
     RemotingCommand invokeSync(final String address, final RemotingCommand request, final long timeoutMillis)

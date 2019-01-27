@@ -6,8 +6,6 @@ import io.netty.channel.*;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -15,13 +13,12 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
-import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import la.renzhen.remoting.*;
 import la.renzhen.remoting.code.RemotingAbstract;
 import la.renzhen.remoting.commons.NamedThreadFactory;
-import la.renzhen.remoting.commons.RemotingHelper;
-import la.renzhen.remoting.netty.tls.HandshakeHandler;
-import la.renzhen.remoting.netty.utils.Constants;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
 import la.renzhen.remoting.protocol.RemotingCommand;
@@ -34,7 +31,6 @@ import java.util.concurrent.*;
 
 @Slf4j
 public class NettyRemotingServer extends RemotingAbstract<Channel> implements RemotingServer<Channel> {
-
     private final String serverName;
     private final ServerBootstrap serverBootstrap;
     private DefaultEventExecutorGroup defaultEventExecutorGroup;
@@ -48,6 +44,10 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
     private final ConcurrentMap<String /* addr */, NettyChannel> channelTables = new ConcurrentHashMap<>();
 
     private int port;
+
+    static {
+        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
+    }
 
     public NettyRemotingServer(final String serverName,final NettyServerConfig config) {
         super(config.getServerOnewaySemaphoreLimits(), config.getServerAsyncSemaphoreLimits(),
@@ -105,7 +105,7 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
     }
 
     @Override
-    public void startupOther() {
+    protected void startupTCPListener() {
         final int serverWorker = nettyServerConfig.getServerWorkerThreads();
         this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(serverWorker, new NamedThreadFactory("NettyServerCodecThread", serverWorker));
 
@@ -143,21 +143,38 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
             ChannelFuture sync = this.serverBootstrap.bind().sync();
             InetSocketAddress addr = (InetSocketAddress) sync.channel().localAddress();
             this.port = addr.getPort();
+            log.info("the server ");
         } catch (InterruptedException e1) {
             throw new RuntimeException("this.serverBootstrap.bind().sync() InterruptedException", e1);
         }
     }
 
     @Override
-    protected void shutdownOther(boolean interrupted) {
+    protected void shutdownTCPListener(boolean interrupted) {
+        try {
+            if(this.eventLoopGroupBoss != null){
+                this.eventLoopGroupBoss.shutdownGracefully();
+            }
 
+            if(this.eventLoopGroupSelector != null) {
+                this.eventLoopGroupSelector.shutdownGracefully();
+            }
+
+            if (this.defaultEventExecutorGroup != null) {
+                this.defaultEventExecutorGroup.shutdownGracefully();
+            }
+        } catch (Exception e) {
+            log.error("NettyRemotingServer shutdown exception, ", e);
+        }
+
+        if (this.publicExecutor != null) {
+            try {
+                this.publicExecutor.shutdown();
+            } catch (Exception e) {
+                log.error("NettyRemotingServer shutdown exception, ", e);
+            }
+        }
     }
-
-    @Override
-    public boolean isRunning() {
-        return false;
-    }
-
 
     @Override
     public ExecutorService getCallbackExecutor() {
@@ -239,7 +256,7 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
     }
 
     @Override
-    public String getServerName() {
-        return null;
+    public String getStartBanner() {
+        return super.getStartBanner() + "  .. Netty ..";
     }
 }

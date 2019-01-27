@@ -37,8 +37,8 @@ public class ChannelEventExecutor<Channel> extends ServiceThread {
         while (!this.isStopped()) {
             try {
                 ChannelEvent<Channel> event = this.eventQueue.poll(3000, TimeUnit.MILLISECONDS);
-                log.debug("{} received an event {} {}", this.getServiceName(), event.getChannel().address(), event.getType());
                 if (event != null && listener != null) {
+                    log.debug("{} received an event {} {}", this.getServiceName(), event.getChannel().address(), event.getType());
                     switch (event.getType()) {
                         case IDLE:
                             listener.onChannelIdle(event.getChannel());

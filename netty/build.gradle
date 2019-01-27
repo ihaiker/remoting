@@ -5,4 +5,6 @@ plugins {
 dependencies {
     compile project(":remoting-core")
     compile "io.netty:netty-all:4.1.33.Final"
+
+    testCompile 'ch.qos.logback:logback-classic:1.2.3'
 }

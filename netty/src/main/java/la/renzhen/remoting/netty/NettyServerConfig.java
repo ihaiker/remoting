@@ -23,7 +23,7 @@ import lombok.Data;
 @Data
 public class NettyServerConfig implements Cloneable {
 
-    private String module = Mixins.get("remoting.module", null);
+    private volatile String module = Mixins.get("remoting.module", null);
 
     private int listenPort = Mixins.getInt(module, "remoting.listenPort", 8888);
 

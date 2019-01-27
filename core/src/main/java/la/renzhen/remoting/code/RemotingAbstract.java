@@ -462,7 +462,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
     }
 
 
-    protected void initResponeTimeoutTimer() {
+    protected void startResponeTimeoutTimer() {
         this.timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -475,22 +475,38 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
         }, TimeUnit.SECONDS.toMillis(5), TimeUnit.SECONDS.toMillis(1));
     }
 
+
     @Override
     public void startup() {
-        this.startupOther();
+        System.out.println(getStartBanner());
+        this.startupTCPListener();
         this.eventExecutor.start();
-        this.initResponeTimeoutTimer();
-        ;
+        this.startResponeTimeoutTimer();
     }
 
-    protected abstract void startupOther();
+    @Override
+    public boolean isRunning() {
+        return !this.eventExecutor.isStopped();
+    }
+
+    protected abstract void startupTCPListener();
 
     @Override
     public void shutdown(boolean interrupted) {
-        this.eventExecutor.shutdown();
-        this.shutdownOther(interrupted);
         this.timer.cancel();
+        this.eventExecutor.shutdown();
+        this.shutdownTCPListener(interrupted);
     }
 
-    protected abstract void shutdownOther(boolean interrupted);
+    protected abstract void shutdownTCPListener(boolean interrupted);
+
+    public String getStartBanner(){
+        return "\n" +
+                "   _____                            \n" +
+                "  (, /   )                 ,        \n" +
+                "    /__ /  _ ___   ____/_   __   _  \n" +
+                " ) /   \\__(/_// (_(_) (___(_/ (_(_/_\n" +
+                "(_/                            .-/  \n" +
+                "                              (_/ ";
+    }
 }
