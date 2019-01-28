@@ -22,9 +22,6 @@ public class TestSerializable implements Serializable {
 
         byte[] encode = RemotingCoder.encode(request).array();
 
-        assert encode.length == RemotingCoder.BYTES + 16;
-        assert encode.length == 14 + 16;
-
         RemotingCommand de = RemotingCoder.decode(ByteBuffer.wrap(encode));
 
         assert de.getId() == request.getId();

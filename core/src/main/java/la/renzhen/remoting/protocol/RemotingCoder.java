@@ -13,7 +13,7 @@ import java.nio.ByteBuffer;
  */
 public class RemotingCoder {
     public static final int BYTES =
-            Integer.BYTES/*length*/
+                    Integer.BYTES/*length*/
                     + Integer.BYTES /*id*/
                     + Short.BYTES/*code*/
                     + Integer.BYTES/*(headers.length+version+flag)*/;
@@ -58,11 +58,11 @@ public class RemotingCoder {
         int headLength = three >> 10;
         int bodyLength = length - headLength - BYTES;
         byte[] header = null, body = null;
-        if(headLength > 0){
+        if (headLength > 0) {
             header = new byte[headLength];
             buf.get(header);
         }
-        if(bodyLength > 0){
+        if (bodyLength > 0) {
             body = new byte[bodyLength];
             buf.get(body);
         }
