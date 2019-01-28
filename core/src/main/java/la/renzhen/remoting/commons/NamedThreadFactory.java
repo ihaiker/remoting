@@ -25,7 +25,7 @@ public class NamedThreadFactory implements ThreadFactory {
     @Override
     public Thread newThread(Runnable r) {
         if (threadTotal != 0) {
-            return new Thread(r, String.format("%s_%d_%d", name, threadTotal, this.threadIndex.incrementAndGet()));
+            return new Thread(r, String.format("%s_%d_%d", name, this.threadIndex.incrementAndGet(), threadTotal));
         } else {
             return new Thread(r, String.format("%s_%d", name, this.threadIndex.incrementAndGet()));
         }

@@ -14,17 +14,22 @@ import la.renzhen.remoting.protocol.RemotingCommand;
  */
 public class NettyChannel implements RemotingChannel<Channel> {
 
-    private ChannelHandlerContext channelHandlerContext;
+    private Channel channel;
     private String address;
 
-    public NettyChannel(ChannelHandlerContext context) {
-        this.channelHandlerContext = context;
-        this.address = NettyUtils.parseChannelRemoteAddr(context.channel());
+    public NettyChannel(ChannelHandlerContext ctx) {
+        this.channel = ctx.channel();
+        this.address = NettyUtils.parseChannelRemoteAddr(ctx.channel());
+    }
+
+    public NettyChannel(ChannelFuture future) {
+        this.channel = future.channel();
+        this.address = NettyUtils.parseChannelRemoteAddr(future.channel());
     }
 
     @Override
     public Channel getChannel() {
-        return this.channelHandlerContext.channel();
+        return this.channel;
     }
 
     @Override
@@ -34,8 +39,7 @@ public class NettyChannel implements RemotingChannel<Channel> {
 
     @Override
     public boolean isOK() {
-        Channel ch = this.getChannel();
-        return ch.isOpen() && ch.isActive();
+        return channel != null && channel.isRegistered() && channel.isActive();
     }
 
     @Override
@@ -45,7 +49,7 @@ public class NettyChannel implements RemotingChannel<Channel> {
 
     @Override
     public void writeAndFlush(RemotingCommand command, ChannelWriterListener<Channel> writerListener) {
-        ChannelFuture future = channelHandlerContext.writeAndFlush(command);
+        ChannelFuture future = channel.writeAndFlush(command);
         if (writerListener != null) {
             future.addListener(new ChannelFutureListener() {
                 @Override

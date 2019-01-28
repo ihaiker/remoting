@@ -31,5 +31,5 @@ public class RemotingConfig {
     /**
      * Server binding host, client link host
      */
-    protected String host;
+    protected String host = "127.0.0.1";
 }

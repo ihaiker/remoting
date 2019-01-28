@@ -28,6 +28,7 @@ import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.*;
 
 @Slf4j
@@ -51,6 +52,10 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
     private NettyServerConfig serverConfig;
 
     protected ExecutorService callbackExecutor;
+
+    public NettyRemotingServer(final NettyServerConfig config) {
+        this(UUID.randomUUID().toString(), config);
+    }
 
     public NettyRemotingServer(final String serverName, final NettyServerConfig config) {
         super(config);
@@ -188,7 +193,7 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
             if (this.defaultEventExecutorGroup != null) {
                 this.defaultEventExecutorGroup.shutdownGracefully();
             }
-            if(this.callbackExecutor != null){
+            if (this.callbackExecutor != null) {
                 this.callbackExecutor.shutdown();
             }
         } catch (Exception e) {
@@ -205,29 +210,38 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
         }
     }
 
+    protected void channelRegisteredHandler(ChannelHandlerContext ctx) {
+        final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
+        NettyChannel nettyChannel = new NettyChannel(ctx);
+        channelTables.put(remoteAddress, nettyChannel);
+    }
+
+    protected void channelUnregisteredHandler(ChannelHandlerContext ctx) {
+        final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
+        channelTables.remove(remoteAddress);
+    }
+
     class NettyConnectManageHandler extends ChannelDuplexHandler {
         @Override
         public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
             log.info("NETTY SERVER PIPELINE: channelRegistered {}", remoteAddress);
             super.channelRegistered(ctx);
-
-            NettyChannel nettyChannel = new NettyChannel(ctx);
-            channelTables.put(remoteAddress, nettyChannel);
+            channelRegisteredHandler(ctx);
         }
 
         @Override
         public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
-            log.info("NETTY SERVER PIPELINE: channelUnregistered, the channel[{}]", remoteAddress);
+            log.info("NETTY SERVER PIPELINE: channelUnregistered, the channel {}", remoteAddress);
             super.channelUnregistered(ctx);
-            channelTables.remove(remoteAddress);
+            channelUnregisteredHandler(ctx);
         }
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
-            log.info("NETTY SERVER PIPELINE: channelActive, the channel[{}]", remoteAddress);
+            log.info("NETTY SERVER PIPELINE: channelActive, the channel {}", remoteAddress);
             super.channelActive(ctx);
 
             RemotingChannel<Channel> nettyChannel = getChannel(remoteAddress);
@@ -237,7 +251,7 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
         @Override
         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
-            log.info("NETTY SERVER PIPELINE: channelInactive, the channel[{}]", remoteAddress);
+            log.info("NETTY SERVER PIPELINE: channelInactive, the channel {}", remoteAddress);
             super.channelInactive(ctx);
 
             RemotingChannel<Channel> nettyChannel = getChannel(remoteAddress);
@@ -278,6 +292,6 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
 
     @Override
     public String getStartBanner() {
-        return super.getStartBanner() + "  .. Netty ..";
+        return super.getStartBanner() + "  .*. NettyServer .*.";
     }
 }

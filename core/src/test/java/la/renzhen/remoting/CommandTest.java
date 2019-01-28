@@ -77,7 +77,7 @@ public class CommandTest {
     public void testEncodeAndDecode(){
         RemotingCommand request = RemotingCommand.request(1);
         request.setVersion(14);
-        request.setCustomHeader(user);
+        request.setCustomHeaders(user);
 
         ByteBuffer out = RemotingCoder.encode(request);
 
@@ -88,7 +88,7 @@ public class CommandTest {
         assert 1 == deRequest.getCode();
         assert deRequest.getVersion() == 14;
 
-        User deUser = deRequest.getCustomHeader(User.class);
+        User deUser = deRequest.getCustomHeaders(User.class);
         assert user.getName().equals(deUser.getName());
     }
 }

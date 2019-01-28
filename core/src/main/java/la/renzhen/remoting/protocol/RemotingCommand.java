@@ -63,7 +63,23 @@ public class RemotingCommand implements Serializable {
         return code == RemotingSysResponseCode.SUCCESS;
     }
 
-    public RemotingCommand setCustomHeader(CommandCustomHeader headers) {
+    public RemotingCommand setStringHeaders(final String header) {
+        if (header == null) {
+            this.headers = null;
+        } else {
+            this.headers = header.getBytes(Charsets.UTF_8);
+        }
+        return this;
+    }
+
+    public String getStringHeaders() {
+        if (headers == null) {
+            return null;
+        }
+        return new String(headers, Charsets.UTF_8);
+    }
+
+    public RemotingCommand setCustomHeaders(CommandCustomHeader headers) {
         if (headers == null) {
             this.headers = null;
         } else {
@@ -76,7 +92,7 @@ public class RemotingCommand implements Serializable {
         return this;
     }
 
-    public <T extends CommandCustomHeader> T getCustomHeader(Class<T> headerClass) {
+    public <T extends CommandCustomHeader> T getCustomHeaders(Class<T> headerClass) {
         if (this.headers == null || this.headers.length == 0) {
             return null;
         }
@@ -103,7 +119,7 @@ public class RemotingCommand implements Serializable {
 
     public static RemotingCommand request(int code, CommandCustomHeader header) {
         return new RemotingCommand(code)
-                .setId(requestIdMaker.incrementAndGet()).setCustomHeader(header);
+                .setId(requestIdMaker.incrementAndGet()).setCustomHeaders(header);
     }
 
     public static RemotingCommand oneway(int code) {
