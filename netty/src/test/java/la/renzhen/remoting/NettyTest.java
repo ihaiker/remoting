@@ -19,11 +19,10 @@ public class NettyTest extends RemotingNettyTest {
     }
 
     @Test
-    public void sendToServer() throws Exception{
+    public void testSync() throws Exception{
         RemotingCommand request = RemotingCommand.request(0);
         RemotingCommand response = client.invokeSync(request, TimeUnit.SECONDS.toMillis(3));
         assert null == response.getStringHeaders();
-
 
         request.setStringHeaders("test1");
         response = client.invokeSync(request, TimeUnit.SECONDS.toMillis(3));

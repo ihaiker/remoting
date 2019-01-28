@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import javax.validation.constraints.Max;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,9 +24,9 @@ public class RemotingCommand implements Serializable {
 
     @Setter @Getter int id = 0;
 
-    @Setter @Getter int code;
+    @Setter @Getter @Max(Short.MAX_VALUE) int code;
 
-    @Setter @Getter private int version = 0;
+    @Setter @Getter @Max(0xFF) int version = 0;
 
     @Setter(AccessLevel.PROTECTED) @Getter private int flag;
 

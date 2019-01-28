@@ -21,6 +21,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.protocol.RemotingCoder;
+import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
@@ -29,19 +30,21 @@ import java.nio.ByteBuffer;
 public class NettyDecoder extends LengthFieldBasedFrameDecoder {
 
     public NettyDecoder(int frameMaxLength) {
-        super(frameMaxLength, Integer.BYTES, Integer.BYTES, 0, Integer.BYTES);
+        super(frameMaxLength, 0, Integer.BYTES, 0, 0);
     }
 
     @Override
-    public Object decode(ChannelHandlerContext ctx, ByteBuf in)  {
+    public Object decode(ChannelHandlerContext ctx, ByteBuf in) {
         ByteBuf frame = null;
         try {
             frame = (ByteBuf) super.decode(ctx, in);
             if (null == frame) {
                 return null;
             }
+
             ByteBuffer byteBuffer = frame.nioBuffer();
-            return RemotingCoder.decode(byteBuffer);
+            RemotingCommand command = RemotingCoder.decode(byteBuffer);
+            return command;
         } catch (Exception e) {
             log.error("decode exception, " + NettyUtils.parseChannelRemoteAddr(ctx.channel()), e);
             NettyUtils.closeChannel(ctx.channel());

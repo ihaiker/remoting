@@ -6,7 +6,6 @@ import org.junit.Test;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.util.Base64;
 
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
@@ -18,10 +17,13 @@ public class TestSerializable implements Serializable {
     public void testSerializable() {
         RemotingCommand request = RemotingCommand.request(1024);
         request.setVersion(12);
-        request.setStringHeaders("headers");
+        request.setStringHeaders("headers1");
         request.setBody("--body--".getBytes());
 
         byte[] encode = RemotingCoder.encode(request).array();
+
+        assert encode.length == RemotingCoder.BYTES + 16;
+        assert encode.length == 14 + 16;
 
         RemotingCommand de = RemotingCoder.decode(ByteBuffer.wrap(encode));
 
@@ -30,6 +32,6 @@ public class TestSerializable implements Serializable {
         assert de.getVersion() == de.getVersion();
         assert de.getFlag() == de.getFlag();
         assert de.getStringHeaders().equals(request.getStringHeaders());
-        assert de.getStringHeaders().equals("headers");
+        assert de.getStringHeaders().equals("headers1");
     }
 }

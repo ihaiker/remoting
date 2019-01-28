@@ -88,7 +88,6 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
         this.invokeOnewayHandler(getChannel(), request, timeoutMillis);
     }
 
-
     @Override
     public ExecutorService getCallbackExecutor() {
         return Optional.ofNullable(this.callbackExecutor)

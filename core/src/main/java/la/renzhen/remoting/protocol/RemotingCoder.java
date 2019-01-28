@@ -21,7 +21,6 @@ public class RemotingCoder {
 
     public static ByteBuffer encode(RemotingCommand cmd) {
         //length
-        int length = BYTES;
         int headerLength = 0;
         if (cmd.headers != null) {
             headerLength = cmd.headers.length;
@@ -30,13 +29,13 @@ public class RemotingCoder {
         if (cmd.body != null) {
             bodyLength = cmd.body.length;
         }
-        length = length + headerLength + bodyLength;
+        int length = BYTES + headerLength + bodyLength;
 
         ByteBuffer result = ByteBuffer.allocate(length);
         result.putInt(length);
         result.putInt(cmd.getId());
         result.putShort((short) cmd.getCode());
-        int three = (headerLength << (8 + 2)) + (cmd.getVersion() << 2) + cmd.getFlag();
+        int three = (headerLength << (8 + 2)) | (cmd.getVersion() << 2) | cmd.getFlag();
         result.putInt(three);
         if (headerLength > 0) {
             result.put(cmd.headers);

@@ -39,6 +39,6 @@ public class RemotingException extends RuntimeException {
 
     @Override
     public String toString() {
-        return "[" + remotingExceptionType.name() + "]" + super.toString();
+        return "[" + remotingExceptionType.name() + "] " + super.toString();
     }
 }
