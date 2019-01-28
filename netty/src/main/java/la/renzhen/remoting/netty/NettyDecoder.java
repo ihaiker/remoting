@@ -30,7 +30,7 @@ import java.nio.ByteBuffer;
 public class NettyDecoder extends LengthFieldBasedFrameDecoder {
 
     public NettyDecoder(int frameMaxLength) {
-        super(frameMaxLength, 0, Integer.BYTES, 0, 0);
+        super(frameMaxLength, 0, Integer.BYTES, 4, 4);
     }
 
     @Override
