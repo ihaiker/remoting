@@ -20,4 +20,5 @@ public interface RemotingClient<Channel> extends Remoting<Channel>, RemotingServ
     void invokeOneway(final RemotingCommand request, final long timeoutMillis)
             throws InterruptedException, RemotingException;
 
+    RemotingChannel<Channel> getChannel();
 }

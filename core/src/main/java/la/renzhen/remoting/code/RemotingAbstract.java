@@ -1,6 +1,7 @@
 package la.renzhen.remoting.code;
 
 import la.renzhen.remoting.*;
+import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.commons.Pair;
 import la.renzhen.remoting.commons.RemotingHelper;
 import la.renzhen.remoting.protocol.RemotingCommand;
@@ -52,6 +53,8 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
      */
     protected Pair<RequestProcessor<Channel>, ExecutorService> defaultRequestProcessor;
 
+    private ExecutorService publicExecutor;
+
     /**
      * custom rpc hooks
      */
@@ -59,12 +62,22 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
 
     private final Timer timer = new Timer("ServerHouseKeepingService", true);
 
-    public RemotingAbstract(final int permitsOneway, final int permitsAsync, final int eventMaxSize) {
-        this.semaphoreOneway = new Semaphore(permitsOneway, true);
-        this.semaphoreAsync = new Semaphore(permitsAsync, true);
-        this.eventExecutor = new ChannelEventExecutor(eventMaxSize);
+    @Getter
+    protected RemotingConfig remotingConfig;
+
+    public RemotingAbstract(final RemotingConfig remotingConfig) {
+        this.remotingConfig = remotingConfig;
+
+        this.semaphoreOneway = new Semaphore(remotingConfig.getOnewayRequestLimits(), true);
+        this.semaphoreAsync = new Semaphore(remotingConfig.getAsyncRequestLimits(), true);
+        this.eventExecutor = new ChannelEventExecutor(remotingConfig.getChannelEventMaxSize());
 
         this.unique = UUID.randomUUID().toString();
+
+        final int publicExecutorSize = remotingConfig.getPublicExecutorThreadSize();
+        if (publicExecutorSize > 0) {
+            this.publicExecutor = Executors.newFixedThreadPool(publicExecutorSize, new NamedThreadFactory("NettyPublicExecutor", publicExecutorSize));
+        }
     }
 
     @Override
@@ -122,7 +135,6 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
             }
         }
     }
-
 
     public void processMessageReceived(RemotingChannel<Channel> ctx, RemotingCommand msg) throws Exception {
         final RemotingCommand cmd = msg;
@@ -244,7 +256,21 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
      * @return Dedicated thread pool instance if specified; or null if the callback is supposed to be executed in the
      * netty event-loop thread.
      */
-    public abstract ExecutorService getCallbackExecutor();
+    public ExecutorService getCallbackExecutor() {
+        return getPublicExecutor();
+    }
+
+    public void setPublicExecutor(ExecutorService publicExecutor) {
+        ExecutorService oldExecutor = this.publicExecutor;
+        this.publicExecutor = publicExecutor;
+        if (oldExecutor != null) {
+            oldExecutor.shutdown();
+        }
+    }
+
+    public ExecutorService getPublicExecutor() {
+        return this.publicExecutor;
+    }
 
     /**
      * Execute callback in callback executor. If callback executor is null, run directly in current thread
@@ -495,12 +521,19 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
     public void shutdown(boolean interrupted) {
         this.timer.cancel();
         this.eventExecutor.shutdown();
+        if (this.publicExecutor != null) {
+            try {
+                this.publicExecutor.shutdown();
+            } catch (Exception e) {
+                log.error("NettyRemotingServer shutdown exception, ", e);
+            }
+        }
         this.shutdownTCPListener(interrupted);
     }
 
     protected abstract void shutdownTCPListener(boolean interrupted);
 
-    public String getStartBanner(){
+    public String getStartBanner() {
         return "\n" +
                 "   _____                            \n" +
                 "  (, /   )                 ,        \n" +
