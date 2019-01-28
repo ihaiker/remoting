@@ -27,9 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadFactory;
+import java.util.Optional;
+import java.util.concurrent.*;
 
 @Slf4j
 public class NettyRemotingServer extends RemotingAbstract<Channel> implements RemotingServer<Channel> {
@@ -51,6 +50,8 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
 
     private NettyServerConfig serverConfig;
 
+    protected ExecutorService callbackExecutor;
+
     public NettyRemotingServer(final String serverName, final NettyServerConfig config) {
         super(config);
 
@@ -60,6 +61,11 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
         this.serverBootstrap = new ServerBootstrap();
 
         this.initEventLoopGroup();
+
+        final int callbackExecutorSize = config.getCallbackExecutorThreads();
+        if (callbackExecutorSize > 0) {
+            this.callbackExecutor = Executors.newFixedThreadPool(callbackExecutorSize, new NamedThreadFactory("NettyCallbackExecutor", callbackExecutorSize));
+        }
     }
 
     @SneakyThrows
@@ -153,6 +159,21 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
         }
     }
 
+
+    @Override
+    public ExecutorService getCallbackExecutor() {
+        return Optional.ofNullable(this.callbackExecutor)
+                .orElseGet(this::getPublicExecutor);
+    }
+
+    public void setCallbackExecutor(ExecutorService callbackExecutor) {
+        final ExecutorService oldExecutorService = this.callbackExecutor;
+        this.callbackExecutor = callbackExecutor;
+        if (oldExecutorService != null) {
+            oldExecutorService.shutdown();
+        }
+    }
+
     @Override
     protected void shutdownTCPListener(boolean interrupted) {
         try {
@@ -166,6 +187,9 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
 
             if (this.defaultEventExecutorGroup != null) {
                 this.defaultEventExecutorGroup.shutdownGracefully();
+            }
+            if(this.callbackExecutor != null){
+                this.callbackExecutor.shutdown();
             }
         } catch (Exception e) {
             log.error("NettyRemotingServer shutdown exception, ", e);
@@ -207,7 +231,7 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
             super.channelActive(ctx);
 
             RemotingChannel<Channel> nettyChannel = getChannel(remoteAddress);
-            putNettyEvent(new ChannelEvent<>(ChannelEventType.CONNECT, nettyChannel));
+            putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.CONNECT, nettyChannel));
         }
 
         @Override
@@ -217,7 +241,7 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
             super.channelInactive(ctx);
 
             RemotingChannel<Channel> nettyChannel = getChannel(remoteAddress);
-            putNettyEvent(new ChannelEvent<>(ChannelEventType.CLOSE, nettyChannel));
+            putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.CLOSE, nettyChannel));
         }
 
         @Override
@@ -229,7 +253,7 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
                     log.warn("NETTY SERVER PIPELINE: IDLE exception [{}]", remoteAddress);
 
                     RemotingChannel<Channel> nettyChannel = getChannel(remoteAddress);
-                    putNettyEvent(new ChannelEvent<>(ChannelEventType.IDLE, nettyChannel));
+                    putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.IDLE, nettyChannel));
                     NettyUtils.closeChannel(ctx.channel());
                 }
             }
@@ -242,7 +266,7 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
             log.warn("NETTY SERVER PIPELINE: exceptionCaught {}", remoteAddress);
             log.warn("NETTY SERVER PIPELINE: exceptionCaught exception.", cause);
             RemotingChannel<Channel> channel = getChannel(remoteAddress);
-            putNettyEvent(new ChannelEvent<Channel>(ChannelEventType.EXCEPTION, channel));
+            putNettyEvent(new ChannelEvent<Channel>(ChannelEvent.Type.EXCEPTION, channel));
             NettyUtils.closeChannel(ctx.channel());
         }
     }

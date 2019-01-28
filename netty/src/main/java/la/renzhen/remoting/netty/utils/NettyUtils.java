@@ -33,6 +33,17 @@ public class NettyUtils {
         return "";
     }
 
+    public static String parseSocketAddressAddr(SocketAddress socketAddress) {
+        if (socketAddress != null) {
+            final String addr = socketAddress.toString();
+
+            if (addr.length() > 0) {
+                return addr.substring(1);
+            }
+        }
+        return "";
+    }
+    
     public static void closeChannel(Channel channel) {
         final String addrRemote = parseChannelRemoteAddr(channel);
         channel.close().addListener(new ChannelFutureListener() {

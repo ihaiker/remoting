@@ -2,6 +2,7 @@ package la.renzhen.remoting.protocol;
 
 import com.alibaba.fastjson.JSON;
 import com.google.common.base.Charsets;
+import la.renzhen.remoting.RemotingException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -63,7 +64,15 @@ public class RemotingCommand implements Serializable {
     }
 
     public RemotingCommand setCustomHeader(CommandCustomHeader headers) {
-        this.headers = JSON.toJSONBytes(headers);
+        if (headers == null) {
+            this.headers = null;
+        } else {
+            if (!headers.checkFields()) {
+                throw new RemotingException(RemotingException.Type.Command,
+                        "Missing required field:" + headers.getClass().getName());
+            }
+            this.headers = JSON.toJSONBytes(headers);
+        }
         return this;
     }
 
@@ -92,7 +101,7 @@ public class RemotingCommand implements Serializable {
                 .setId(requestIdMaker.incrementAndGet());
     }
 
-    public static RemotingCommand request(int code, CommandCustomHeader header ) {
+    public static RemotingCommand request(int code, CommandCustomHeader header) {
         return new RemotingCommand(code)
                 .setId(requestIdMaker.incrementAndGet()).setCustomHeader(header);
     }
@@ -113,6 +122,7 @@ public class RemotingCommand implements Serializable {
     public static RemotingCommand response(RemotingCommand cmd) {
         return new RemotingCommand(RemotingSysResponseCode.SUCCESS).makeResponse().setId(cmd.getId());
     }
+
     public static RemotingCommand response() {
         return new RemotingCommand(RemotingSysResponseCode.SUCCESS).makeResponse();
     }

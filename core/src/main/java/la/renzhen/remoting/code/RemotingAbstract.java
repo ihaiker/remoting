@@ -53,6 +53,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
      */
     protected Pair<RequestProcessor<Channel>, ExecutorService> defaultRequestProcessor;
 
+    //TODO 这里是否需要优化一些
     private ExecutorService publicExecutor;
 
     /**
@@ -311,7 +312,6 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
         }
     }
 
-
     protected RemotingCommand invokeSyncHandler(final RemotingChannel<Channel> channel, final RemotingCommand request, final long timeoutMillis) throws InterruptedException, RemotingException {
         final int requestId = request.getId();
         try {
@@ -335,9 +335,9 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
             RemotingCommand responseCommand = responseFuture.waitResponse();
             if (null == responseCommand) {
                 if (responseFuture.isSendRequestOK()) {
-                    throw new RemotingException(RemotingException.RemotingExceptionType.Timeout, addr, responseFuture.getCause());
+                    throw new RemotingException(RemotingException.Type.Timeout, addr, responseFuture.getCause());
                 } else {
-                    throw new RemotingException(RemotingException.RemotingExceptionType.SendRequest, addr, responseFuture.getCause());
+                    throw new RemotingException(RemotingException.Type.SendRequest, addr, responseFuture.getCause());
                 }
             }
             return responseCommand;
@@ -355,7 +355,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
             long costTime = System.currentTimeMillis() - beginStartTime;
             if (timeoutMillis < costTime) {
                 this.semaphoreAsync.release();
-                throw new RemotingException(RemotingException.RemotingExceptionType.Timeout, "invokeAsyncImpl call timeout");
+                throw new RemotingException(RemotingException.Type.Timeout, "invokeAsyncImpl call timeout");
             }
 
             final ResponseFuture responseFuture = new ResponseFuture(channel, request, timeoutMillis - costTime, invokeCallback, semaphoreAsync);
@@ -372,17 +372,17 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
             } catch (Exception e) {
                 responseFuture.release();
                 log.warn("send a request command to channel <" + channel.address() + "> Exception", e);
-                throw new RemotingException(RemotingException.RemotingExceptionType.SendRequest, e);
+                throw new RemotingException(RemotingException.Type.SendRequest, e);
             }
         } else {
             if (timeoutMillis <= 0) {
-                throw new RemotingException(RemotingException.RemotingExceptionType.TooMuchRequest, "invokeAsyncImpl invoke too fast");
+                throw new RemotingException(RemotingException.Type.TooMuchRequest, "invokeAsyncImpl invoke too fast");
             } else {
                 String info = String.format("invokeAsyncImpl tryAcquire semaphore timeout, %dms, waiting thread nums: %d semaphoreAsyncValue: %d",
                         timeoutMillis, this.semaphoreAsync.getQueueLength(), this.semaphoreAsync.availablePermits()
                 );
                 log.warn(info);
-                throw new RemotingException(RemotingException.RemotingExceptionType.Timeout, info);
+                throw new RemotingException(RemotingException.Type.Timeout, info);
             }
         }
     }
@@ -403,11 +403,11 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
             } catch (Exception e) {
                 once.release();
                 log.warn("write send a request command to channel <" + channel.address() + "> failed.");
-                throw new RemotingException(RemotingException.RemotingExceptionType.SendRequest, e);
+                throw new RemotingException(RemotingException.Type.SendRequest, e);
             }
         } else {
             if (timeoutMillis <= 0) {
-                throw new RemotingException(RemotingException.RemotingExceptionType.TooMuchRequest, "invokeOnewayImpl invoke too fast");
+                throw new RemotingException(RemotingException.Type.TooMuchRequest, "invokeOnewayImpl invoke too fast");
             } else {
                 String info = String.format(
                         "invokeOnewayImpl tryAcquire semaphore timeout, %dms, waiting thread nums: %d semaphoreAsyncValue: %d",
@@ -416,7 +416,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
                         this.semaphoreOneway.availablePermits()
                 );
                 log.warn(info);
-                throw new RemotingException(RemotingException.RemotingExceptionType.Timeout, info);
+                throw new RemotingException(RemotingException.Type.Timeout, info);
             }
         }
     }
@@ -478,17 +478,16 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
         Iterator<Map.Entry<Integer, ResponseFuture<Channel>>> it = responseTable.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Integer, ResponseFuture<Channel>> entry = it.next();
-            if (entry.getValue().getChannel() == channel) {
-                Integer opaque = entry.getKey();
-                if (opaque != null) {
-                    requestFail(opaque);
+            if (entry.getValue().getChannel().equals(channel)) {
+                final Integer requestId = entry.getKey();
+                if (requestId != null) {
+                    requestFail(requestId);
                 }
             }
         }
     }
 
-
-    protected void startResponeTimeoutTimer() {
+    protected void startResponseTimeoutTimer() {
         this.timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -505,9 +504,11 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
     @Override
     public void startup() {
         System.out.println(getStartBanner());
+        this.startupBefore();
         this.startupTCPListener();
         this.eventExecutor.start();
-        this.startResponeTimeoutTimer();
+        this.startResponseTimeoutTimer();
+        this.startupAfter();
     }
 
     @Override
@@ -517,8 +518,18 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
 
     protected abstract void startupTCPListener();
 
+    protected void startupBefore() {
+    }
+
+    protected void startupAfter() {
+    }
+
+    protected void shutdownBefore(boolean interrupted) {
+    }
+
     @Override
     public void shutdown(boolean interrupted) {
+        this.shutdownBefore(interrupted);
         this.timer.cancel();
         this.eventExecutor.shutdown();
         if (this.publicExecutor != null) {
@@ -529,6 +540,10 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
             }
         }
         this.shutdownTCPListener(interrupted);
+        this.shutdownAfter(interrupted);
+    }
+
+    protected void shutdownAfter(boolean interrupted) {
     }
 
     protected abstract void shutdownTCPListener(boolean interrupted);

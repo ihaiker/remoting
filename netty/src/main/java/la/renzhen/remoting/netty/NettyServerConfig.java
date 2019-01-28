@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class NettyServerConfig extends RemotingConfig implements Cloneable {
 
-    private int callbackExecutorThreads = 4;
+    private int callbackExecutorThreads = 0;
 
     private int bossThreads = 1;
     private int workerThreads = 8;

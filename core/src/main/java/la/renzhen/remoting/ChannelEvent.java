@@ -1,24 +1,32 @@
 package la.renzhen.remoting;
 
-public class ChannelEvent<Channel> {
-    private final ChannelEventType type;
-    private final RemotingChannel<Channel> channel;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
-    public ChannelEvent(ChannelEventType type, RemotingChannel<Channel> channel) {
+@Accessors(chain = true)
+public class ChannelEvent<Channel> {
+
+    public enum Type {
+        CONNECT,
+        CLOSE,
+        IDLE,
+        EXCEPTION
+    }
+
+    //@formatter:off
+    @Getter private final Type type;
+    @Getter private final RemotingChannel<Channel> channel;
+    @Setter @Getter private Object data;
+    //@formatter:on
+
+    public ChannelEvent(Type type, RemotingChannel<Channel> channel) {
         this.type = type;
         this.channel = channel;
     }
 
-    public ChannelEventType getType() {
-        return type;
-    }
-
-    public RemotingChannel<Channel> getChannel() {
-        return channel;
-    }
-
     @Override
     public String toString() {
-        return "ChannelEvent [type=" + type + ", remoteAddr=" + ", channel=" + channel + "]";
+        return "ChannelEvent [type=" + type + ", channel=" + channel + "]";
     }
 }

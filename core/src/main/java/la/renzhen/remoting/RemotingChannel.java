@@ -1,6 +1,7 @@
 package la.renzhen.remoting;
 
 import la.renzhen.remoting.protocol.RemotingCommand;
+import lombok.EqualsAndHashCode;
 
 /**
  * wrapper of the connector in different implementations.
@@ -27,4 +28,8 @@ public interface RemotingChannel<Channel> {
     }
 
     void writeAndFlush(RemotingCommand command, ChannelWriterListener<Channel> writerListener);
+
+    default boolean equals(RemotingChannel<Channel> channel){
+        return this.address().equals(channel.address());
+    }
 }

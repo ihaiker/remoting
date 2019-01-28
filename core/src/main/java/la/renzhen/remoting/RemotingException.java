@@ -3,7 +3,7 @@ package la.renzhen.remoting;
 public class RemotingException extends RuntimeException {
     private static final long serialVersionUID = -5690687334570505110L;
 
-    public enum RemotingExceptionType {
+    public enum Type {
         /**
          * Command missing required fields
          */
@@ -20,19 +20,19 @@ public class RemotingException extends RuntimeException {
         TooMuchRequest
     }
 
-    private RemotingExceptionType remotingExceptionType;
+    private Type remotingExceptionType;
 
-    public RemotingException(RemotingExceptionType exceptionType, String message) {
+    public RemotingException(Type exceptionType, String message) {
         super(message);
         this.remotingExceptionType = exceptionType;
     }
 
-    public RemotingException(RemotingExceptionType exceptionType, String message, Throwable cause) {
+    public RemotingException(Type exceptionType, String message, Throwable cause) {
         super(message, cause);
         this.remotingExceptionType = exceptionType;
     }
 
-    public RemotingException(RemotingExceptionType exceptionType, Throwable cause) {
+    public RemotingException(Type exceptionType, Throwable cause) {
         super(cause);
         this.remotingExceptionType = exceptionType;
     }
