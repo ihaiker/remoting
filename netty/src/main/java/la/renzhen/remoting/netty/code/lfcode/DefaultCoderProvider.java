@@ -1,8 +1,9 @@
-package la.renzhen.remoting.netty.code;
+package la.renzhen.remoting.netty.code.lfcode;
 
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOutboundHandler;
 import la.renzhen.remoting.RemotingConfig;
+import la.renzhen.remoting.netty.code.CoderProvider;
 import lombok.Data;
 
 /**

@@ -1,4 +1,4 @@
-package la.renzhen.remoting.netty.code;
+package la.renzhen.remoting.netty.code.lfcode;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
