@@ -4,7 +4,7 @@ import la.renzhen.remoting.RemotingConfig;
 import lombok.Data;
 
 @Data
-public class NettyClientConfig extends RemotingConfig {
+public class NettyClientConfig extends RemotingConfig implements Cloneable {
 
     private int workerThreads = 4;
 
@@ -14,4 +14,10 @@ public class NettyClientConfig extends RemotingConfig {
     private long channelNotActiveInterval = 1000 * 60;
 
     private boolean closeSocketIfTimeout = false;
+
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return (NettyClientConfig) super.clone();
+    }
 }

@@ -1,7 +1,6 @@
 package la.renzhen.remoting.netty;
 
 import la.renzhen.remoting.RemotingConfig;
-import la.renzhen.remoting.netty.tls.TlsMode;
 import lombok.Data;
 
 @Data
@@ -17,8 +16,6 @@ public class NettyServerConfig extends RemotingConfig implements Cloneable {
     private boolean pooledByteBufAllocatorEnable = false;
 
     private boolean useEPollNativeSelector = true;
-
-    private TlsMode tlsMode = TlsMode.PERMISSIVE;
 
     @Override
     public Object clone() throws CloneNotSupportedException {
