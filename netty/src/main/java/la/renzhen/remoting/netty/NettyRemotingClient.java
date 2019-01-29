@@ -15,14 +15,13 @@ import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.SocketAddress;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
@@ -167,7 +166,6 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
     }
 
     protected void channelConnectHandler(ChannelHandlerContext ctx) {
-
     }
 
     protected void channelDisconnectHandler(ChannelHandlerContext ctx) {
@@ -201,7 +199,7 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
             log.info("NETTY CLIENT PIPELINE: DISCONNECT {}", remoteAddress);
             putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.CLOSE, selectChannel(remoteAddress)));
             channelDisconnectHandler(ctx);
-            closeChannel(ctx.channel());
+            closeChannel(selectChannel(remoteAddress));
             super.disconnect(ctx, promise);
         }
 
@@ -211,9 +209,8 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
             log.info("NETTY CLIENT PIPELINE: CLOSE {}", remoteAddress);
             putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.CLOSE, selectChannel(remoteAddress)));
             channelCloseHandler(ctx);
-            closeChannel(ctx.channel());
+            closeChannel(selectChannel(remoteAddress));
             super.close(ctx, promise);
-            NettyRemotingClient.this.failFast(selectChannel(remoteAddress));
         }
 
         @Override
@@ -224,7 +221,7 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
                     final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
                     log.warn("NETTY CLIENT PIPELINE: IDLE exception [{}]", remoteAddress);
                     putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.IDLE, selectChannel(remoteAddress)));
-                    closeChannel(ctx.channel());
+                    closeChannel(selectChannel(remoteAddress));
                 }
             }
             ctx.fireUserEventTriggered(evt);
@@ -235,13 +232,14 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
             log.warn("NETTY CLIENT PIPELINE: exceptionCaught {}", remoteAddress);
             log.warn("NETTY CLIENT PIPELINE: exceptionCaught exception.", cause);
-            closeChannel(ctx.channel());
+            closeChannel(selectChannel(remoteAddress));
             putNettyEvent(new ChannelEvent<Channel>(ChannelEvent.Type.EXCEPTION, selectChannel(remoteAddress)).setData(cause));
         }
     }
 
-    public void closeChannel(final Channel channel) {
-        //TODO 关闭通道
+    public void closeChannel(final RemotingChannel<Channel> channel) {
+        failFast(channel);
+        NettyUtils.closeChannel(channel.getChannel());
     }
 
     @Override

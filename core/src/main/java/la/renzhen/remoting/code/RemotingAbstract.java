@@ -54,7 +54,6 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
      */
     protected Pair<RequestProcessor<Channel>, ExecutorService> defaultRequestProcessor;
 
-    //TODO 这里是否需要优化一些
     private ExecutorService publicExecutor;
 
     /**
