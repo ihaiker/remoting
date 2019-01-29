@@ -14,15 +14,15 @@ public class NettyTest extends RemotingNettyTest {
 
     @Test
     @SneakyThrows
-    public void testServer(){
+    public void testServer() {
         //Thread.currentThread().join(TimeUnit.MINUTES.toMillis(1));
     }
 
     @Test
-    public void testSync() throws Exception{
-        RemotingCommand request = RemotingCommand.request(0);
+    public void testSync() throws Exception {
+        RemotingCommand request = RemotingCommand.request(0).setStringHeaders("header - test");
         RemotingCommand response = client.invokeSync(request, TimeUnit.SECONDS.toMillis(3));
-        assert null == response.getStringHeaders();
+        assert "receiver header - test ".equals(response.getStringHeaders());
 
         request.setStringHeaders("test1");
         response = client.invokeSync(request, TimeUnit.SECONDS.toMillis(3));

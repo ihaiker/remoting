@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package la.renzhen.remoting.code;
+package la.renzhen.remoting.commons;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;

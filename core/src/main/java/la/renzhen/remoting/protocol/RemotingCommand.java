@@ -12,6 +12,8 @@ import javax.validation.constraints.Max;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Setter
+@Getter
 @Accessors(chain = true)
 public class RemotingCommand implements Serializable {
 
@@ -21,18 +23,12 @@ public class RemotingCommand implements Serializable {
     public static AtomicInteger requestIdMaker = new AtomicInteger(0);
 
     //@formatter:off
-
-    @Setter @Getter int id = 0;
-
-    @Setter @Getter @Max(Short.MAX_VALUE) int code;
-
-    @Setter @Getter @Max(0xFF) int version = 0;
-
-    @Setter(AccessLevel.PROTECTED) @Getter private int flag;
-
-    @Setter @Getter transient byte[] headers;
-    @Setter @Getter transient byte[] body;
-
+    int id = 0;
+    @Max(Short.MAX_VALUE) int code;
+    @Max(0xFF) int version = 0;
+    @Max(0b11) int flag;
+    transient byte[] headers;
+    transient byte[] body;
     //@formatter:on
 
     public RemotingCommand() {
