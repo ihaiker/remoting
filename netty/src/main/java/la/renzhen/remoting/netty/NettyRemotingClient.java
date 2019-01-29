@@ -14,6 +14,7 @@ import la.renzhen.remoting.code.RemotingAbstract;
 import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.netty.coder.CoderProvider;
 import la.renzhen.remoting.netty.coder.lfcode.DefaultCoderProvider;
+import la.renzhen.remoting.netty.security.SecurityProvider;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
@@ -39,6 +40,7 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
     private final Bootstrap bootstrap = new Bootstrap();
 
     @Setter @Getter private CoderProvider coderProvider;
+    @Setter @Getter private SecurityProvider securityProvider;
 
     private final EventLoopGroup eventLoopGroupWorker;
     private DefaultEventExecutorGroup defaultEventExecutorGroup;
@@ -124,15 +126,10 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline pipeline = ch.pipeline();
-                        //TODO ssl
-                       /*if (nettyClientConfig.isUseTLS()) {
-                            if (null != sslContext) {
-                                pipeline.addFirst(defaultEventExecutorGroup, "sslHandler", sslContext.newHandler(ch.alloc()));
-                                log.info("Prepend SSL handler");
-                            } else {
-                                log.warn("Connections are insecure as SSLContext is null!");
-                            }
-                        }*/
+                        if (securityProvider != null) {
+                            log.info("Enable security mode: {}", securityProvider.getClass().getSimpleName());
+                            pipeline.addLast(defaultEventExecutorGroup, "ssl", securityProvider.clientHandler());
+                        }
                         pipeline.addLast(defaultEventExecutorGroup,
                                 coderProvider.encode(), coderProvider.decode(),
                                 new IdleStateHandler(nettyClientConfig.getReaderIdleTimeSeconds(), nettyClientConfig.getWriterIdleTimeSeconds(),

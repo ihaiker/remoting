@@ -20,6 +20,7 @@ import la.renzhen.remoting.code.RemotingAbstract;
 import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.netty.coder.CoderProvider;
 import la.renzhen.remoting.netty.coder.lfcode.DefaultCoderProvider;
+import la.renzhen.remoting.netty.security.SecurityProvider;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
 import la.renzhen.remoting.protocol.RemotingCommand;
@@ -38,28 +39,29 @@ import java.util.concurrent.*;
 @Slf4j
 public class NettyRemotingServer extends RemotingAbstract<Channel> implements RemotingServer<Channel> {
 
+    //@formatter:off
     private final String serverName;
     private final ServerBootstrap serverBootstrap;
     private DefaultEventExecutorGroup defaultEventExecutorGroup;
     private EventLoopGroup eventLoopGroupSelector;
     private EventLoopGroup eventLoopGroupBoss;
 
-    @Setter
-    @Getter
-    private CoderProvider coderProvider;
+    @Setter @Getter private CoderProvider coderProvider;
+    @Setter @Getter private SecurityProvider securityProvider;
 
     private final NettyServerConfig nettyServerConfig;
 
     //final ChannelGroup channels =  new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     private final ConcurrentMap<String /* addr */, NettyChannel> channelTables = new ConcurrentHashMap<>();
 
-    static {
-        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
-    }
-
     private NettyServerConfig serverConfig;
 
     protected ExecutorService callbackExecutor;
+    //@formatter:on
+
+    static {
+        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
+    }
 
     public NettyRemotingServer(final NettyServerConfig config) {
         this(UUID.randomUUID().toString(), config);
@@ -140,16 +142,18 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
-                        ch.pipeline()
-                                //TODO SSL
-                                // .addLast(defaultEventExecutorGroup, Constants.HANDSHAKE_HANDLER_NAME, new HandshakeHandler(defaultEventExecutorGroup, null, nettyServerConfig.getTlsMode()))
-                                .addLast(defaultEventExecutorGroup,
-                                        coderProvider.encode(), coderProvider.decode(),
-                                        new IdleStateHandler(nettyServerConfig.getReaderIdleTimeSeconds(), nettyServerConfig.getWriterIdleTimeSeconds(),
-                                                nettyServerConfig.getAllIdleTimeSeconds()),
-                                        new NettyConnectManageHandler(),
-                                        new NettyServerHandler()
-                                );
+                        ChannelPipeline cp = ch.pipeline();
+                        if (securityProvider != null) {
+                            log.info("Enable security mode: {}", securityProvider.getClass().getSimpleName());
+                            cp.addLast(defaultEventExecutorGroup, "ssl", securityProvider.serverHandler());
+                        }
+                        cp.addLast(defaultEventExecutorGroup,
+                                coderProvider.encode(), coderProvider.decode(),
+                                new IdleStateHandler(nettyServerConfig.getReaderIdleTimeSeconds(), nettyServerConfig.getWriterIdleTimeSeconds(),
+                                        nettyServerConfig.getAllIdleTimeSeconds()),
+                                new NettyConnectManageHandler(),
+                                new NettyServerHandler()
+                        );
                     }
                 });
 
