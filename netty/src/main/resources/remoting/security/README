@@ -1,0 +1,13 @@
+Country Name (2 letter code) []:ZH
+State or Province Name (full name) []:Beijing
+Locality Name (eg, city) []:Beijing
+Organization Name (eg, company) []:remoting
+Organizational Unit Name (eg, section) []:remoting
+Common Name (eg, fully qualified host name) []:remoting
+Email Address []:wo@renzhen.la
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:remoting
+
+phrase: remoting
