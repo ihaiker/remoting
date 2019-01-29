@@ -142,9 +142,9 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
         final RemotingCommand cmd = msg;
         if (cmd != null) {
             if (cmd.isResponse()) {
-                processRequestCommand(ctx, cmd);
-            } else {
                 processResponseCommand(ctx, cmd);
+            } else {
+                processRequestCommand(ctx, cmd);
             }
         }
     }
@@ -180,7 +180,6 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
                                     log.error(cmd.toString());
                                     log.error(response.toString());
                                 }
-
                             }
                         }
                     } catch (Throwable e) {
