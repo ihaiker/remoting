@@ -1,4 +1,4 @@
-package la.renzhen.remoting.netty.code;
+package la.renzhen.remoting.netty.coder;
 
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOutboundHandler;

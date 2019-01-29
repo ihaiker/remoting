@@ -429,7 +429,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
      * This method is periodically invoked to scan and expire deprecated request.
      * </p>
      */
-    public void scanResponseTable() { //TODO 使用HealWheellTimer
+    public void scanResponseTable() { //TOME 使用HealWheellTimer
         final List<ResponseFuture> rfList = new LinkedList<ResponseFuture>();
         Iterator<Map.Entry<Integer, ResponseFuture<Channel>>> it = this.responseTable.entrySet().iterator();
         while (it.hasNext()) {

@@ -10,7 +10,7 @@ public class NettyServerConfig extends RemotingConfig implements Cloneable {
 
     private int bossThreads = 1;
     private int workerThreads = 8;
-    private int selectorThreads = 3;//TODO why ??? is 3 ?
+    private int selectorThreads = 3;//TOME why ??? is 3 ?
 
 
     private boolean pooledByteBufAllocatorEnable = false;
