@@ -6,6 +6,6 @@ package la.renzhen.remoting.netty.utils;
  */
 public interface Constants {
     String HANDSHAKE_HANDLER_NAME = "handshakeHandler";
-    String TLS_HANDLER_NAME = "sslHandler";
+    String TLS_HANDLER_NAME = "initChannel";
     String FILE_REGION_ENCODER_NAME = "fileRegionEncoder";
 }

@@ -10,7 +10,6 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import la.renzhen.remoting.*;
-import la.renzhen.remoting.code.RemotingAbstract;
 import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.netty.coder.CoderProvider;
 import la.renzhen.remoting.netty.coder.lfcode.DefaultCoderProvider;
@@ -18,7 +17,6 @@ import la.renzhen.remoting.netty.security.SecurityProvider;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.SocketAddress;
@@ -32,15 +30,12 @@ import java.util.concurrent.Executors;
  * @version 2019-01-27 20:17
  */
 @Slf4j
-public class NettyRemotingClient extends RemotingAbstract<Channel> implements RemotingClient<Channel> {
+public class NettyRemotingClient extends NettyRemoting implements RemotingClient<Channel> {
 
     //@formatter:off
     private String clientName;
     @Getter private NettyClientConfig nettyClientConfig;
     private final Bootstrap bootstrap = new Bootstrap();
-
-    @Setter @Getter private CoderProvider coderProvider;
-    @Setter @Getter private SecurityProvider securityProvider;
 
     private final EventLoopGroup eventLoopGroupWorker;
     private DefaultEventExecutorGroup defaultEventExecutorGroup;
@@ -109,6 +104,15 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
 
     @Override
     protected void startupTCPListener() {
+        final SecurityProvider securityProvider = getSecurityProvider();
+        if (securityProvider != null) {
+            try {
+                securityProvider.preCheck();
+            } catch (Exception e) {
+                throw new RemotingException(RemotingException.Type.Connect, e);
+            }
+        }
+
         if (this.coderProvider == null) {
             this.coderProvider = new DefaultCoderProvider(nettyClientConfig);
         }
@@ -127,9 +131,13 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
                     public void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline pipeline = ch.pipeline();
                         if (securityProvider != null) {
-                            log.info("Enable security mode: {}", securityProvider.getClass().getSimpleName());
-                            pipeline.addLast(defaultEventExecutorGroup, "ssl", securityProvider.clientHandler());
+                            log.info("Enable client security mode: {}", securityProvider.getClass().getSimpleName());
+                            ChannelHandler securityHandler = securityProvider.initChannel(ch);
+                            if (securityHandler != null) {
+                                pipeline.addLast(defaultEventExecutorGroup, SecurityProvider.HANDLER_NAME, securityHandler);
+                            }
                         }
+                        final CoderProvider coderProvider = getCoderProvider();
                         pipeline.addLast(defaultEventExecutorGroup,
                                 coderProvider.encode(), coderProvider.decode(),
                                 new IdleStateHandler(nettyClientConfig.getReaderIdleTimeSeconds(), nettyClientConfig.getWriterIdleTimeSeconds(),
@@ -145,6 +153,7 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
         String address = nettyClientConfig.getHost() + ":" + nettyClientConfig.getPort();
         ChannelFuture channelFuture = this.bootstrap.connect(nettyClientConfig.getHost(), nettyClientConfig.getPort());
         try {
+            //TODO cf.channel().closeFuture().sync();
             channelFuture.awaitUninterruptibly(nettyClientConfig.getConnectTimeoutMillis());
         } catch (Exception e) {
             throw new RemotingException(RemotingException.Type.Connect, address, e);
@@ -244,7 +253,7 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
 
     public void closeChannel(final RemotingChannel<Channel> channel) {
         failFast(channel);
-        NettyUtils.closeChannel(channel.getChannel());
+        //NettyUtils.closeChannel(channel.getChannel());
     }
 
     @Override

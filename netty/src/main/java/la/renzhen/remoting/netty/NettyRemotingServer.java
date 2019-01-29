@@ -16,7 +16,6 @@ import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import la.renzhen.remoting.*;
-import la.renzhen.remoting.code.RemotingAbstract;
 import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.netty.coder.CoderProvider;
 import la.renzhen.remoting.netty.coder.lfcode.DefaultCoderProvider;
@@ -24,8 +23,6 @@ import la.renzhen.remoting.netty.security.SecurityProvider;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
 import la.renzhen.remoting.protocol.RemotingCommand;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,7 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.*;
 
 @Slf4j
-public class NettyRemotingServer extends RemotingAbstract<Channel> implements RemotingServer<Channel> {
+public class NettyRemotingServer extends NettyRemoting implements RemotingServer<Channel> {
 
     //@formatter:off
     private final String serverName;
@@ -45,9 +42,6 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
     private DefaultEventExecutorGroup defaultEventExecutorGroup;
     private EventLoopGroup eventLoopGroupSelector;
     private EventLoopGroup eventLoopGroupBoss;
-
-    @Setter @Getter private CoderProvider coderProvider;
-    @Setter @Getter private SecurityProvider securityProvider;
 
     private final NettyServerConfig nettyServerConfig;
 
@@ -124,6 +118,15 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
 
     @Override
     protected void startupTCPListener() {
+        final SecurityProvider securityProvider = getSecurityProvider();
+        if (securityProvider != null) {
+            try {
+                securityProvider.preCheck();
+            } catch (Exception e) {
+                throw new RemotingException(RemotingException.Type.Connect, e);
+            }
+        }
+
         if (this.coderProvider == null) {
             this.coderProvider = new DefaultCoderProvider(nettyServerConfig);
         }
@@ -142,12 +145,16 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
-                        ChannelPipeline cp = ch.pipeline();
+                        ChannelPipeline pipeline = ch.pipeline();
                         if (securityProvider != null) {
-                            log.info("Enable security mode: {}", securityProvider.getClass().getSimpleName());
-                            cp.addLast(defaultEventExecutorGroup, "ssl", securityProvider.serverHandler());
+                            log.info("Enable server security mode: {}", securityProvider.getClass().getSimpleName());
+                            ChannelHandler securityHandler = securityProvider.initChannel(ch);
+                            if (securityHandler != null) {
+                                pipeline.addLast(defaultEventExecutorGroup, SecurityProvider.HANDLER_NAME, securityHandler);
+                            }
                         }
-                        cp.addLast(defaultEventExecutorGroup,
+                        final CoderProvider coderProvider = getCoderProvider();
+                        pipeline.addLast(defaultEventExecutorGroup,
                                 coderProvider.encode(), coderProvider.decode(),
                                 new IdleStateHandler(nettyServerConfig.getReaderIdleTimeSeconds(), nettyServerConfig.getWriterIdleTimeSeconds(),
                                         nettyServerConfig.getAllIdleTimeSeconds()),
