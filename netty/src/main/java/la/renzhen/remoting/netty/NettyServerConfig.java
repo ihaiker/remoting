@@ -14,7 +14,7 @@ public class NettyServerConfig extends RemotingConfig implements Cloneable {
     private int selectorThreads = 3;//TODO why ??? is 3 ?
 
 
-    private boolean pooledByteBufAllocatorEnable = true;
+    private boolean pooledByteBufAllocatorEnable = false;
 
     private boolean useEPollNativeSelector = true;
 

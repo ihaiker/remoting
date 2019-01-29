@@ -21,7 +21,11 @@ public class RemotingConfig {
     protected int socketSndBufSize = 65535;
     protected int socketRcvBufSize = 65535;
     protected int maxFrameLength = 16777216;
-    private int channelMaxIdleTimeSeconds = 120;
+    protected int channelMaxIdleTimeSeconds = 120;
+
+    protected int readerIdleTimeSeconds = 0;
+    protected int writerIdleTimeSeconds = 0;
+    protected int allIdleTimeSeconds = 120;
 
     /**
      * Server listening port, client link port

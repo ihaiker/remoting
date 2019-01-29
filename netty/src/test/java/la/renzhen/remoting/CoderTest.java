@@ -2,8 +2,8 @@ package la.renzhen.remoting;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import la.renzhen.remoting.netty.NettyDecoder;
-import la.renzhen.remoting.netty.NettyEncoder;
+import la.renzhen.remoting.netty.code.NettyDecoder;
+import la.renzhen.remoting.netty.code.NettyEncoder;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import org.junit.Test;
 

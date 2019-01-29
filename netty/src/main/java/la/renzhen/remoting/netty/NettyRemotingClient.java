@@ -12,9 +12,14 @@ import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import la.renzhen.remoting.*;
 import la.renzhen.remoting.code.RemotingAbstract;
 import la.renzhen.remoting.commons.NamedThreadFactory;
+import la.renzhen.remoting.netty.code.CoderProvider;
+import la.renzhen.remoting.netty.code.DefaultCoderProvider;
+import la.renzhen.remoting.netty.code.NettyDecoder;
+import la.renzhen.remoting.netty.code.NettyEncoder;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.SocketAddress;
@@ -34,6 +39,8 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
     private String clientName;
     @Getter private NettyClientConfig nettyClientConfig;
     private final Bootstrap bootstrap = new Bootstrap();
+
+    @Setter @Getter private CoderProvider coderProvider;
 
     private final EventLoopGroup eventLoopGroupWorker;
     private DefaultEventExecutorGroup defaultEventExecutorGroup;
@@ -60,7 +67,6 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
             this.callbackExecutor = Executors.newFixedThreadPool(callThreadSize, new NamedThreadFactory("NettyClientCallback", callThreadSize));
         }
         this.eventLoopGroupWorker = new NioEventLoopGroup(1, new NamedThreadFactory("NettyClientSelector"));
-        //TODO ssl处理
     }
 
     @Override
@@ -103,6 +109,10 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
 
     @Override
     protected void startupTCPListener() {
+        if (this.coderProvider == null) {
+            this.coderProvider = new DefaultCoderProvider(nettyClientConfig);
+        }
+
         final int workerSize = nettyClientConfig.getWorkerThreads();
         this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(workerSize, new NamedThreadFactory("NettyClientWorkerThread", workerSize));
 
@@ -126,8 +136,9 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
                             }
                         }*/
                         pipeline.addLast(defaultEventExecutorGroup,
-                                new NettyEncoder(), new NettyDecoder(nettyClientConfig.getMaxFrameLength()),
-                                new IdleStateHandler(0, 0, nettyClientConfig.getChannelMaxIdleTimeSeconds()),
+                                coderProvider.encode(), coderProvider.decode(),
+                                new IdleStateHandler(nettyClientConfig.getReaderIdleTimeSeconds(), nettyClientConfig.getWriterIdleTimeSeconds(),
+                                        nettyClientConfig.getAllIdleTimeSeconds()),
                                 new NettyConnectManageHandler(), new NettyClientHandler());
                     }
                 });
@@ -159,7 +170,6 @@ public class NettyRemotingClient extends RemotingAbstract<Channel> implements Re
             if (this.callbackExecutor != null) {
                 this.callbackExecutor.shutdown();
             }
-
         } catch (Exception e) {
             log.error("close client error", e);
         }

@@ -18,9 +18,15 @@ import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import la.renzhen.remoting.*;
 import la.renzhen.remoting.code.RemotingAbstract;
 import la.renzhen.remoting.commons.NamedThreadFactory;
+import la.renzhen.remoting.netty.code.CoderProvider;
+import la.renzhen.remoting.netty.code.DefaultCoderProvider;
+import la.renzhen.remoting.netty.code.NettyDecoder;
+import la.renzhen.remoting.netty.code.NettyEncoder;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
 import la.renzhen.remoting.protocol.RemotingCommand;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,12 +39,16 @@ import java.util.concurrent.*;
 
 @Slf4j
 public class NettyRemotingServer extends RemotingAbstract<Channel> implements RemotingServer<Channel> {
+
     private final String serverName;
     private final ServerBootstrap serverBootstrap;
     private DefaultEventExecutorGroup defaultEventExecutorGroup;
     private EventLoopGroup eventLoopGroupSelector;
     private EventLoopGroup eventLoopGroupBoss;
 
+    @Setter
+    @Getter
+    private CoderProvider coderProvider;
 
     private final NettyServerConfig nettyServerConfig;
 
@@ -114,6 +124,9 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
 
     @Override
     protected void startupTCPListener() {
+        if (this.coderProvider == null) {
+            this.coderProvider = new DefaultCoderProvider(nettyServerConfig);
+        }
         final int serverWorker = nettyServerConfig.getWorkerThreads();
         this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(serverWorker, new NamedThreadFactory("NettyServerCodecThread", serverWorker));
 
@@ -133,9 +146,9 @@ public class NettyRemotingServer extends RemotingAbstract<Channel> implements Re
                                 //TODO SSL
                                 // .addLast(defaultEventExecutorGroup, Constants.HANDSHAKE_HANDLER_NAME, new HandshakeHandler(defaultEventExecutorGroup, null, nettyServerConfig.getTlsMode()))
                                 .addLast(defaultEventExecutorGroup,
-                                        new NettyEncoder(),
-                                        new NettyDecoder(nettyServerConfig.getMaxFrameLength()),
-                                        new IdleStateHandler(0, 0, nettyServerConfig.getChannelMaxIdleTimeSeconds()),
+                                        coderProvider.encode(), coderProvider.decode(),
+                                        new IdleStateHandler(nettyServerConfig.getReaderIdleTimeSeconds(), nettyServerConfig.getWriterIdleTimeSeconds(),
+                                                nettyServerConfig.getAllIdleTimeSeconds()),
                                         new NettyConnectManageHandler(),
                                         new NettyServerHandler()
                                 );
