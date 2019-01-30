@@ -5,7 +5,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.SslProvider;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import lombok.SneakyThrows;
@@ -25,7 +24,7 @@ public class TestSecurityProvider implements SecurityProvider {
     @SneakyThrows
     private ChannelHandler clientHandler(SocketChannel ch) {
         SslContext sslContext = SslContextBuilder.forClient()
-                .sslProvider(SslProvider.JDK)
+                .sslProvider(SslContext.defaultClientProvider())
                 .trustManager(InsecureTrustManagerFactory.INSTANCE)
                 .build();
         return sslContext.newHandler(ch.alloc());
@@ -37,7 +36,7 @@ public class TestSecurityProvider implements SecurityProvider {
         SslContext sslContext = SslContextBuilder
                 .forServer(selfSignedCertificate.certificate(), selfSignedCertificate.privateKey())
                 .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                .sslProvider(SslProvider.JDK)
+                .sslProvider(SslContext.defaultServerProvider())
                 .clientAuth(ClientAuth.OPTIONAL)
                 .build();
         return sslContext.newHandler(ch.alloc());

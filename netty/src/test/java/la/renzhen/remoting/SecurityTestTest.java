@@ -21,7 +21,7 @@ public class SecurityTestTest extends RemotingNettyTest {
         
         boolean server = remoting instanceof NettyRemotingServer;
         //remoting.setSecurityProvider(new InternalSecurityProvider(server));
-        //remoting.setSecurityProvider(new TestSecurityProvider(server));
+        remoting.setSecurityProvider(new TestSecurityProvider(server));
 
 //        String path = "/Users/haiker/Documents/project/myself/JavaWork/remoting";
 //        if (server) {
