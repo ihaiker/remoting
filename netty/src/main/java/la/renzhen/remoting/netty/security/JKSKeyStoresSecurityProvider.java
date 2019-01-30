@@ -94,7 +94,7 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
         kmf.init(ks, password.toCharArray());
 
         TrustManagerFactory tmf = null;
-        if (truststore != null) {
+        if (isAuth()) {
             // truststore
             KeyStore ts = KeyStore.getInstance("JKS");
             ts.load(loadStream(truststore), password.toCharArray());

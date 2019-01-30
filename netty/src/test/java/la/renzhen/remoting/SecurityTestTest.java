@@ -2,7 +2,7 @@ package la.renzhen.remoting;
 
 import la.renzhen.remoting.netty.NettyRemoting;
 import la.renzhen.remoting.netty.NettyRemotingServer;
-import la.renzhen.remoting.netty.security.InternalSecurityProvider;
+import la.renzhen.remoting.netty.security.test.TestTLSSecurityProvider;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import org.junit.Test;
 
@@ -20,9 +20,8 @@ public class SecurityTestTest extends RemotingNettyTest {
 
         boolean server = remoting instanceof NettyRemotingServer;
         remoting.setModule(server ? "Server" : "Client");
-        remoting.setSecurityProvider(new InternalSecurityProvider(server));
-
-        //remoting.setSecurityProvider(new TestSecurityProvider(server));
+        //remoting.setSecurityProvider(new InternalSecurityProvider(server));
+        remoting.setSecurityProvider(new TestTLSSecurityProvider(server));
     }
 
     @Test

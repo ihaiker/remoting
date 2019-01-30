@@ -23,7 +23,7 @@ cd jks
 
 export ALIAS=remoting
 export KEY_PASSWORD=remoting
-export DNAME="CN=Haiker, OU=Developer,O=Remoting, L=Beijing, S=Beijing, C=CH"
+export DNAME="OU=Developer,O=Remoting,L=Beijing,S=Beijing,C=CH,CN=127.0.0.1"
 
 echo "------- server -----------"
 
