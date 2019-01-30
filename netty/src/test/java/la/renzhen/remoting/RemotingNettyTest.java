@@ -16,7 +16,7 @@ import java.util.concurrent.Executors;
  * @version 2019-01-28 15:46
  */
 @Slf4j
-public class RemotingNettyTest {
+public abstract class RemotingNettyTest {
     protected RemotingServer server;
     protected RemotingClient client;
 

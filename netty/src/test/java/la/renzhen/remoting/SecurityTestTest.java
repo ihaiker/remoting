@@ -3,6 +3,7 @@ package la.renzhen.remoting;
 import la.renzhen.remoting.netty.NettyRemoting;
 import la.renzhen.remoting.netty.NettyRemotingServer;
 import la.renzhen.remoting.netty.security.InternalSecurityProvider;
+import la.renzhen.remoting.netty.security.TestSecurityProvider;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import org.junit.Test;
 
@@ -19,7 +20,8 @@ public class SecurityTestTest extends RemotingNettyTest {
         super.registerTestProcessor(remoting);
         
         boolean server = remoting instanceof NettyRemotingServer;
-        remoting.setSecurityProvider(new InternalSecurityProvider(server));
+        //remoting.setSecurityProvider(new InternalSecurityProvider(server));
+        //remoting.setSecurityProvider(new TestSecurityProvider(server));
 
 //        String path = "/Users/haiker/Documents/project/myself/JavaWork/remoting";
 //        if (server) {

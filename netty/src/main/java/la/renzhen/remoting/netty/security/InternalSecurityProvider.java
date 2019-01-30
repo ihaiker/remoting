@@ -7,7 +7,6 @@ import java.io.InputStream;
  * @version 2019-01-29 17:46
  */
 public class InternalSecurityProvider extends AbstractSecurityProvider {
-
     private boolean isServer;
 
     public InternalSecurityProvider(boolean isServer) {

@@ -53,6 +53,8 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
     protected ExecutorService callbackExecutor;
     //@formatter:on
 
+    //TODO 白名单黑名单设计
+
     static {
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
     }

@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class NettyTest extends RemotingNettyTest {
 
-
     @Test
     public void testSyncHeader() throws Exception {
         RemotingCommand request = RemotingCommand.request(0).setStringHeaders("header - test");

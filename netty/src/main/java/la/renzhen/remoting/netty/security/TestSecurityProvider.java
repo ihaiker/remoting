@@ -36,6 +36,7 @@ public class TestSecurityProvider implements SecurityProvider {
         SelfSignedCertificate selfSignedCertificate = new SelfSignedCertificate();
         SslContext sslContext = SslContextBuilder
                 .forServer(selfSignedCertificate.certificate(), selfSignedCertificate.privateKey())
+                .trustManager(InsecureTrustManagerFactory.INSTANCE)
                 .sslProvider(SslProvider.JDK)
                 .clientAuth(ClientAuth.OPTIONAL)
                 .build();
