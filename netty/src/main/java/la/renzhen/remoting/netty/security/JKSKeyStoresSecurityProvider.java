@@ -65,7 +65,8 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
             builder.trustManager(InsecureTrustManagerFactory.INSTANCE);
         }
 
-        return builder.sslProvider(SslProvider.JDK)
+        return builder
+                .sslProvider(SslProvider.JDK)
                 .clientAuth(clientAuth)
                 .protocols(PROTOCOL)
                 .build();
@@ -79,14 +80,16 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
         } else {
             builder.trustManager(InsecureTrustManagerFactory.INSTANCE);
         }
-        return builder.sslProvider(SslProvider.JDK).build();
+        return builder
+                .protocols(PROTOCOL)
+                .sslProvider(SslProvider.JDK).build();
     }
 
     private Pair<KeyManagerFactory, TrustManagerFactory> load(final String keystore, final String truststore, final String password) throws Exception {
         //keystore
         KeyStore ks = KeyStore.getInstance("JKS");
         ks.load(loadStream(keystore), password.toCharArray());
-        // Set up key manager factory to use our key store
+        //Set up key manager factory to use our key store
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(ks, password.toCharArray());
 

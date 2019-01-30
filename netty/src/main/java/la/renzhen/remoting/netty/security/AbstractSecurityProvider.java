@@ -44,7 +44,6 @@ public abstract class AbstractSecurityProvider implements SecurityProvider {
     protected abstract SslContext getClientSSlContext(SocketChannel ch);
 
     protected InputStream loadStream(String path) throws IOException {
-        //return this.getClass().getClassLoader().getResourceAsStream(path);
         return new FileInputStream(path);
     }
 }

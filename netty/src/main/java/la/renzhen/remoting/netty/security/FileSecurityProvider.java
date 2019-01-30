@@ -1,6 +1,5 @@
 package la.renzhen.remoting.netty.security;
 
-import lombok.Getter;
 
 import javax.validation.constraints.NotNull;
 
