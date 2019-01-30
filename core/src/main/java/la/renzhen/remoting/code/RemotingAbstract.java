@@ -71,7 +71,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
 
         this.semaphoreOneway = new Semaphore(remotingConfig.getOnewayRequestLimits(), true);
         this.semaphoreAsync = new Semaphore(remotingConfig.getAsyncRequestLimits(), true);
-        this.eventExecutor = new ChannelEventExecutor(remotingConfig.getChannelEventMaxSize());
+        this.eventExecutor = new ChannelEventExecutor<Channel>(remotingConfig.getChannelEventMaxSize());
 
         this.unique = UUID.randomUUID().toString();
 
@@ -503,32 +503,21 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
     @Override
     public void startup() {
         System.out.println(getStartBanner());
-        this.startupBefore();
         this.startupTCPListener();
         this.eventExecutor.start();
         this.startResponseTimeoutTimer();
-        this.startupAfter();
     }
 
     @Override
     public boolean isRunning() {
+        //TODO BUG如何判断已经运行了
         return !this.eventExecutor.isStopped();
     }
 
     protected abstract void startupTCPListener();
 
-    protected void startupBefore() {
-    }
-
-    protected void startupAfter() {
-    }
-
-    protected void shutdownBefore(boolean interrupted) {
-    }
-
     @Override
     public void shutdown(boolean interrupted) {
-        this.shutdownBefore(interrupted);
         this.timer.cancel();
         this.eventExecutor.shutdown();
         if (this.publicExecutor != null) {
@@ -539,10 +528,6 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
             }
         }
         this.shutdownTCPListener(interrupted);
-        this.shutdownAfter(interrupted);
-    }
-
-    protected void shutdownAfter(boolean interrupted) {
     }
 
     protected abstract void shutdownTCPListener(boolean interrupted);

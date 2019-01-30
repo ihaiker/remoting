@@ -38,7 +38,6 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
     private final Bootstrap bootstrap = new Bootstrap();
 
     private final EventLoopGroup eventLoopGroupWorker;
-    private DefaultEventExecutorGroup defaultEventExecutorGroup;
 
     private NettyChannel channel;
 
@@ -104,21 +103,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
 
     @Override
     protected void startupTCPListener() {
-        final SecurityProvider securityProvider = getSecurityProvider();
-        if (securityProvider != null) {
-            try {
-                securityProvider.preCheck();
-            } catch (Exception e) {
-                throw new RemotingException(RemotingException.Type.Connect, e);
-            }
-        }
-
-        if (this.coderProvider == null) {
-            this.coderProvider = new DefaultCoderProvider(nettyClientConfig);
-        }
-
-        final int workerSize = nettyClientConfig.getWorkerThreads();
-        this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(workerSize, new NamedThreadFactory("NettyClientWorkerThread", workerSize));
+        super.startupTCPListener();
 
         Bootstrap handler = this.bootstrap.group(this.eventLoopGroupWorker).channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
@@ -129,20 +114,15 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
+                        beforeInitChannel(ch);
                         ChannelPipeline pipeline = ch.pipeline();
-                        if (securityProvider != null) {
-                            log.info("Enable client security mode: {}", securityProvider.getClass().getSimpleName());
-                            ChannelHandler securityHandler = securityProvider.initChannel(ch);
-                            if (securityHandler != null) {
-                                pipeline.addLast(defaultEventExecutorGroup, SecurityProvider.HANDLER_NAME, securityHandler);
-                            }
-                        }
                         final CoderProvider coderProvider = getCoderProvider();
-                        pipeline.addLast(defaultEventExecutorGroup,
+                        pipeline.addLast(getEventExecutorGroup(),
                                 coderProvider.encode(), coderProvider.decode(),
                                 new IdleStateHandler(nettyClientConfig.getReaderIdleTimeSeconds(), nettyClientConfig.getWriterIdleTimeSeconds(),
                                         nettyClientConfig.getAllIdleTimeSeconds()),
                                 new NettyConnectManageHandler(), new NettyClientHandler());
+                        afterInitChannel(ch);
                     }
                 });
 
@@ -167,13 +147,10 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
         try {
             this.eventLoopGroupWorker.shutdownGracefully();
 
-            if (this.defaultEventExecutorGroup != null) {
-                this.defaultEventExecutorGroup.shutdownGracefully();
-            }
-
             if (this.callbackExecutor != null) {
                 this.callbackExecutor.shutdown();
             }
+            super.shutdownTCPListener(interrupted);
         } catch (Exception e) {
             log.error("close client error", e);
         }

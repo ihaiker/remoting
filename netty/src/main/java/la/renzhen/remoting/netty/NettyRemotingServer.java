@@ -39,7 +39,6 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
     //@formatter:off
     private final String serverName;
     private final ServerBootstrap serverBootstrap;
-    private DefaultEventExecutorGroup defaultEventExecutorGroup;
     private EventLoopGroup eventLoopGroupSelector;
     private EventLoopGroup eventLoopGroupBoss;
 
@@ -120,20 +119,7 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
 
     @Override
     protected void startupTCPListener() {
-        final SecurityProvider securityProvider = getSecurityProvider();
-        if (securityProvider != null) {
-            try {
-                securityProvider.preCheck();
-            } catch (Exception e) {
-                throw new RemotingException(RemotingException.Type.Connect, e);
-            }
-        }
-
-        if (this.coderProvider == null) {
-            this.coderProvider = new DefaultCoderProvider(nettyServerConfig);
-        }
-        final int serverWorker = nettyServerConfig.getWorkerThreads();
-        this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(serverWorker, new NamedThreadFactory("NettyServerCodecThread", serverWorker));
+        super.startupTCPListener();
 
         ServerBootstrap childHandler = this.serverBootstrap.group(this.eventLoopGroupBoss, this.eventLoopGroupSelector)
                 .channel(useEpoll() ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
@@ -147,22 +133,17 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
+                        beforeInitChannel(ch);
                         ChannelPipeline pipeline = ch.pipeline();
-                        if (securityProvider != null) {
-                            log.info("Enable server security mode: {}", securityProvider.getClass().getSimpleName());
-                            ChannelHandler securityHandler = securityProvider.initChannel(ch);
-                            if (securityHandler != null) {
-                                pipeline.addLast(defaultEventExecutorGroup, SecurityProvider.HANDLER_NAME, securityHandler);
-                            }
-                        }
                         final CoderProvider coderProvider = getCoderProvider();
-                        pipeline.addLast(defaultEventExecutorGroup,
+                        pipeline.addLast(getEventExecutorGroup(),
                                 coderProvider.encode(), coderProvider.decode(),
                                 new IdleStateHandler(nettyServerConfig.getReaderIdleTimeSeconds(), nettyServerConfig.getWriterIdleTimeSeconds(),
                                         nettyServerConfig.getAllIdleTimeSeconds()),
                                 new NettyConnectManageHandler(),
                                 new NettyServerHandler()
                         );
+                        afterInitChannel(ch);
                     }
                 });
 
@@ -214,12 +195,11 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
                 this.eventLoopGroupSelector.shutdownGracefully();
             }
 
-            if (this.defaultEventExecutorGroup != null) {
-                this.defaultEventExecutorGroup.shutdownGracefully();
-            }
             if (this.callbackExecutor != null) {
                 this.callbackExecutor.shutdown();
             }
+
+            super.shutdownTCPListener(interrupted);
         } catch (Exception e) {
             log.error("NettyRemotingServer shutdown exception, ", e);
         }
