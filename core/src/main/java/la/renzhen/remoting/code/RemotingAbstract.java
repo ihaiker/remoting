@@ -8,6 +8,7 @@ import la.renzhen.remoting.commons.SemaphoreReleaseOnlyOnce;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import la.renzhen.remoting.protocol.RemotingSysResponseCode;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -20,8 +21,8 @@ import java.util.concurrent.*;
 @Slf4j
 public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, RemotingService {
 
-    @Getter
-    private String unique;
+    @Getter private String unique;
+    @Setter @Getter private String module = "Remoting";
 
     /**
      * Semaphore to limit maximum number of on-going asynchronous requests, which protects system memory footprint.

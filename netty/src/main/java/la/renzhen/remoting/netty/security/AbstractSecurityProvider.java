@@ -32,7 +32,9 @@ public abstract class AbstractSecurityProvider implements SecurityProvider {
         SSLEngine sslEngine = sslContext.newEngine(ch.alloc());
         if (isServer()) {
             sslEngine.setUseClientMode(false);//服务器模式
-            sslEngine.setNeedClientAuth(auth);//需要客户端验证
+            if (auth) {
+                sslEngine.setNeedClientAuth(true);//需要客户端验证
+            }
         } else {
             sslEngine.setUseClientMode(true);//客户方模式
         }

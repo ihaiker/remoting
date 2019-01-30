@@ -56,7 +56,7 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
     protected SslContext createServerSSlContext() throws Exception {
         Pair<KeyManagerFactory, TrustManagerFactory> pair = load(keystore, truststore, password);
 
-        ClientAuth clientAuth = ClientAuth.OPTIONAL;
+        ClientAuth clientAuth = ClientAuth.NONE;
         SslContextBuilder builder = SslContextBuilder.forServer(pair.getFirst());
         if (isAuth()) {
             builder.trustManager(pair.getSecond());
@@ -80,9 +80,9 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
         } else {
             builder.trustManager(InsecureTrustManagerFactory.INSTANCE);
         }
-        return builder
+        return builder.sslProvider(SslProvider.JDK)
                 .protocols(PROTOCOL)
-                .sslProvider(SslProvider.JDK).build();
+                .build();
     }
 
     private Pair<KeyManagerFactory, TrustManagerFactory> load(final String keystore, final String truststore, final String password) throws Exception {

@@ -18,7 +18,7 @@ public class InternalSecurityProvider extends JKSKeyStoresSecurityProvider {
 
     public InternalSecurityProvider(boolean server) {
         super(server, server ? SERVER_KEYSTORE : CLIENT_KEYSTORE,
-                server ? null : CLIENT_TRUSTSTORE, KEY_PASSWORD);
+                server ? SERVER_TRUSTSTORE : CLIENT_TRUSTSTORE, KEY_PASSWORD);
     }
 
     @Override

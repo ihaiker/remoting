@@ -18,6 +18,8 @@ public interface Remoting<Channel> {
 
     Map<String,String> getAttrs();
 
+    String getModule();
+
     void registerProcessor(final int requestCode, final RequestProcessor<Channel> processor, final ExecutorService executor);
 
     void registerDefaultProcessor(final RequestProcessor<Channel> processor, final ExecutorService executor);

@@ -19,7 +19,9 @@ public class SecurityTestTest extends RemotingNettyTest {
         super.registerTestProcessor(remoting);
 
         boolean server = remoting instanceof NettyRemotingServer;
+        remoting.setModule(server ? "Server" : "Client");
         remoting.setSecurityProvider(new InternalSecurityProvider(server));
+
         //remoting.setSecurityProvider(new TestSecurityProvider(server));
     }
 
