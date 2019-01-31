@@ -1,12 +1,10 @@
 package la.renzhen.remoting.netty.security.jks;
 
 import io.netty.channel.socket.SocketChannel;
-import la.renzhen.remoting.Remoting;
 import la.renzhen.remoting.commons.Pair;
 import la.renzhen.remoting.netty.security.AbstractSecurityProvider;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -41,11 +39,12 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
     }
 
     protected SSLContext createSSlContext() throws Exception {
-        Pair<KeyManagerFactory, TrustManagerFactory> pair = load(jksConfig.keystore(), jksConfig.truststore(), jksConfig.password());
         SSLContext serverContext = SSLContext.getInstance(PROTOCOL);
+        Pair<KeyManagerFactory, TrustManagerFactory> pair = load(jksConfig.keystore(), jksConfig.truststore(), jksConfig.password());
         KeyManagerFactory kmf = pair.getFirst();
         TrustManagerFactory tmf = pair.getSecond();
-        serverContext.init(kmf == null ? null : kmf.getKeyManagers(), tmf == null ? null : tmf.getTrustManagers(), null);
+        serverContext.init(kmf == null ? null : kmf.getKeyManagers(),
+                tmf == null ? null : tmf.getTrustManagers(), null);
         return serverContext;
     }
 
@@ -60,9 +59,9 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
             kmf.init(ks, password.toCharArray());
         }
 
+        // truststore
         TrustManagerFactory tmf = null;
-        if (isAuth()) {
-            // truststore
+        if (!isServer() || isAuth()) {
             KeyStore ts = KeyStore.getInstance("JKS");
             ts.load(loadStream(truststore), password.toCharArray());
             // set up trust manager factory to use our trust store
