@@ -8,16 +8,12 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import la.renzhen.remoting.*;
 import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.netty.coder.CoderProvider;
-import la.renzhen.remoting.netty.coder.lfcode.DefaultCoderProvider;
-import la.renzhen.remoting.netty.security.SecurityProvider;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.net.SocketAddress;
 import java.util.Optional;
@@ -126,20 +122,28 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
                     }
                 });
 
-        this.createAndConnectChannel();
+        this.connectToServer();
     }
 
-    protected void createAndConnectChannel() {
-        String address = nettyClientConfig.getHost() + ":" + nettyClientConfig.getPort();
-        ChannelFuture channelFuture = this.bootstrap.connect(nettyClientConfig.getHost(), nettyClientConfig.getPort());
+    protected void connectToServer() {
+        this.channel = connectToServer(nettyClientConfig.getHost(), nettyClientConfig.getPort());
+        //TODO 自动重连
+    }
+
+    protected NettyChannel connectToServer(String host, int port) {
+        String address = host + ":" + port;
+        ChannelFuture channelFuture = this.bootstrap.connect(host, port);
         try {
             channelFuture.awaitUninterruptibly(nettyClientConfig.getConnectTimeoutMillis());
-            //channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
             throw new RemotingException(RemotingException.Type.Connect, address, e);
         }
-        this.channel = new NettyChannel(channelFuture);
-        log.info("Link to server {}", address);
+        if (!channelFuture.channel().isActive()) {
+            throw new RemotingException(RemotingException.Type.Connect, "Cannot connect to the server: " + address);
+        }
+        NettyChannel channel = new NettyChannel(channelFuture);
+        log.info("connect to server: {}", address);
+        return channel;
     }
 
     @Override
@@ -150,6 +154,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
             if (this.callbackExecutor != null) {
                 this.callbackExecutor.shutdown();
             }
+
             super.shutdownTCPListener(interrupted);
         } catch (Exception e) {
             log.error("close client error", e);

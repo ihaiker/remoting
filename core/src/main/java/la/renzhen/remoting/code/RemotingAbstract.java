@@ -9,7 +9,6 @@ import la.renzhen.remoting.protocol.RemotingCommand;
 import la.renzhen.remoting.protocol.RemotingSysResponseCode;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -62,7 +61,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
      */
     protected List<CommandHook<Channel>> commandHooks = new ArrayList<>();
 
-    private final Timer timer = new Timer("ServerHouseKeepingService", true);
+    private final Timer responseTimer = new Timer("ServerHouseKeepingService", true);
 
     @Getter
     protected RemotingConfig remotingConfig;
@@ -488,7 +487,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
     }
 
     protected void startResponseTimeoutTimer() {
-        this.timer.scheduleAtFixedRate(new TimerTask() {
+        this.responseTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 try {
@@ -497,7 +496,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
                     log.error("scanResponseTable exception", e);
                 }
             }
-        }, TimeUnit.SECONDS.toMillis(5), TimeUnit.SECONDS.toMillis(1));
+        }, TimeUnit.SECONDS.toMillis(3), remotingConfig.getScanResponseTimerPeriod());
     }
 
 
@@ -519,7 +518,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
 
     @Override
     public void shutdown(boolean interrupted) {
-        this.timer.cancel();
+        this.responseTimer.cancel();
         this.eventExecutor.shutdown();
         if (this.publicExecutor != null) {
             try {

@@ -8,6 +8,9 @@
         </encoder>
     </appender>
 
+    <logger name="io.netty" level="warn"></logger>
+    <logger name="la.renzhen.remoting" level="debug"></logger>
+
     <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>

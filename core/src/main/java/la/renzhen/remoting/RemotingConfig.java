@@ -28,6 +28,11 @@ public class RemotingConfig {
     protected int allIdleTimeSeconds = 120;
 
     /**
+     * the period for search timeout request timeout.
+     */
+    protected int scanResponseTimerPeriod = 300;
+
+    /**
      * Server listening port, client link port
      */
     protected int port = 8888;
