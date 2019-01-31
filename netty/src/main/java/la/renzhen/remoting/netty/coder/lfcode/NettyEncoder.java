@@ -3,12 +3,13 @@ package la.renzhen.remoting.netty.coder.lfcode;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
+import la.renzhen.remoting.LoggerSupport;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
-public class NettyEncoder extends MessageToByteEncoder<RemotingCommand> {
+
+public class NettyEncoder extends MessageToByteEncoder<RemotingCommand> implements LoggerSupport {
     public static final int BYTES =
             +Integer.BYTES /* id */
                     + Short.BYTES   /* code */

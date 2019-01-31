@@ -15,8 +15,8 @@ import java.util.concurrent.Executors;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-28 15:46
  */
-@Slf4j
-public abstract class RemotingNettyTest {
+
+public abstract class RemotingNettyTest implements LoggerSupport {
     protected RemotingServer server;
     protected RemotingClient client;
 

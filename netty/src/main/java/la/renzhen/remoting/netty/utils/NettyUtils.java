@@ -3,6 +3,7 @@ package la.renzhen.remoting.netty.utils;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import la.renzhen.remoting.LoggerSupport;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.SocketAddress;
@@ -11,8 +12,8 @@ import java.net.SocketAddress;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-27 16:06
  */
-@Slf4j
-public class NettyUtils {
+
+public class NettyUtils implements LoggerSupport {
 
     public static String parseChannelRemoteAddr(final Channel channel) {
         if (null == channel) {

@@ -16,6 +16,8 @@
  */
 package la.renzhen.remoting.commons;
 
+import la.renzhen.remoting.LoggerSupport;
+import la.renzhen.remoting.Remoting;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -24,8 +26,8 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Enumeration;
 
-@Slf4j
-public class RemotingHelper {
+
+public class RemotingHelper implements LoggerSupport {
 
     public static String exceptionSimpleDesc(final Throwable e) {
         StringBuffer sb = new StringBuffer();

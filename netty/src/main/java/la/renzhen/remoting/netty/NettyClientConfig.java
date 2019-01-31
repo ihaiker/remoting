@@ -2,8 +2,10 @@ package la.renzhen.remoting.netty;
 
 import la.renzhen.remoting.RemotingConfig;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Setter @Getter
 public class NettyClientConfig extends RemotingConfig implements Cloneable {
 
     private int workerThreads = 4;

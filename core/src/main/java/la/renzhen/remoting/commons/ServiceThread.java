@@ -1,12 +1,12 @@
 package la.renzhen.remoting.commons;
 
-import lombok.extern.slf4j.Slf4j;
+import la.renzhen.remoting.LoggerSupport;
 
 /**
  * Base class for background thread
  */
-@Slf4j
-public abstract class ServiceThread implements Runnable {
+
+public abstract class ServiceThread implements Runnable , LoggerSupport {
 
     private static final long JOIN_TIME = 90 * 1000;
     protected final Thread thread;

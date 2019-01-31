@@ -67,7 +67,7 @@ public abstract class NettyRemoting extends RemotingAbstract<Channel> {
 
     protected void beforeInitChannel(SocketChannel ch) {
         if (getSecurityProvider() != null) {
-            LOGGER.info("Enable client security mode: {}", securityProvider.getClass().getSimpleName());
+            log.info("Enable client security mode: {}", securityProvider.getClass().getSimpleName());
             ChannelHandler securityHandler = securityProvider.initChannel(ch);
             if (securityHandler != null) {
                 ch.pipeline().addLast(getEventExecutorGroup(), SecurityProvider.HANDLER_NAME, securityHandler);

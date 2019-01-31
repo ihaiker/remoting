@@ -3,14 +3,15 @@ package la.renzhen.remoting.netty.coder.lfcode;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import la.renzhen.remoting.LoggerSupport;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 
-@Slf4j
-public class NettyDecoder extends LengthFieldBasedFrameDecoder {
+
+public class NettyDecoder extends LengthFieldBasedFrameDecoder implements LoggerSupport {
     public static final int BYTES =
             +Integer.BYTES /*id*/
                     + Short.BYTES/*code*/

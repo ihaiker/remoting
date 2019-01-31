@@ -12,8 +12,6 @@ import java.util.concurrent.ExecutorService;
  */
 public interface Remoting<Channel> {
 
-    Logger LOGGER = LoggerFactory.getLogger("REMOTING");;
-
     String getUnique();
 
     Map<String,String> getAttrs();

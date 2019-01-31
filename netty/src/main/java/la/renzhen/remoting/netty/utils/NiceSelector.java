@@ -1,5 +1,6 @@
 package la.renzhen.remoting.netty.utils;
 
+import la.renzhen.remoting.LoggerSupport;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -11,8 +12,8 @@ import java.nio.channels.spi.SelectorProvider;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-25 15:45
  */
-@Slf4j
-public class NiceSelector {
+
+public class NiceSelector implements LoggerSupport {
 
     public static final String OS_NAME = System.getProperty("os.name");
 

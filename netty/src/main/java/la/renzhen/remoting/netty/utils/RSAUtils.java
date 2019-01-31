@@ -1,6 +1,7 @@
 package la.renzhen.remoting.netty.utils;
 
 import io.netty.channel.SimpleChannelInboundHandler;
+import la.renzhen.remoting.LoggerSupport;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.Cipher;
@@ -26,8 +27,8 @@ import java.util.Base64;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-29 22:37
  */
-@Slf4j
-public class RSAUtils {
+
+public class RSAUtils implements LoggerSupport {
 
     public static File folder;
 

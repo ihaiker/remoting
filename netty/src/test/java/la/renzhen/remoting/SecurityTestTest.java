@@ -28,13 +28,25 @@ public class SecurityTestTest extends RemotingNettyTest {
 
         JKSConfig config;
         String password = "nettyDemo";
+
+        //oneway
         if (server) {
-            String path =  ROOT + "/certs/test/serverStore.jks";
+            String path = ROOT + "/certs/oneway/serverStore.jks";
+            config = JKSConfig.onewayAuthServer(path, password);
+        } else {
+            String path = ROOT + "/certs/oneway/clientStore.jks";
+            config = JKSConfig.onewayAuthClient(path, password);
+        }
+
+        //twoway
+        /*if (server) {
+            String path = ROOT + "/certs/test/serverStore.jks";
             config = JKSConfig.twowayAuthServer(path, path, password);
         } else {
-            String path =  ROOT + "/certs/test/clientStore.jks";
+            String path = ROOT + "/certs/test/clientStore.jks";
             config = JKSConfig.twowayAuthClient(path, path, password);
-        }
+        }*/
+
         //config.fromResource(true);
         remoting.setSecurityProvider(new JKSKeyStoresSecurityProvider(config));
     }

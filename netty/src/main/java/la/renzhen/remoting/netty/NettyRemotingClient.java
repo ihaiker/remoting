@@ -29,7 +29,7 @@ import java.util.concurrent.Executors;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-27 20:17
  */
-@Slf4j
+
 public class NettyRemotingClient extends NettyRemoting implements RemotingClient<Channel> {
 
     //@formatter:off

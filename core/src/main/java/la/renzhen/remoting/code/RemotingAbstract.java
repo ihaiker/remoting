@@ -18,8 +18,8 @@ import java.util.concurrent.*;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-27 11:39
  */
-@Slf4j
-public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, RemotingService {
+
+public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, RemotingService,LoggerSupport {
 
     @Getter private String unique;
     @Setter @Getter private String module = "Remoting";

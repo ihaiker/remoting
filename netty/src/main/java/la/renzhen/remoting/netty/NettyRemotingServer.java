@@ -33,7 +33,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.*;
 
-@Slf4j
+
 public class NettyRemotingServer extends NettyRemoting implements RemotingServer<Channel> {
 
     //@formatter:off

@@ -12,7 +12,7 @@ public interface SecurityProvider {
 
     /**
      * init channel
-     * @param ch
+     * @param ch socket channel
      * @return If it is not empty, the handler will be named {@link SecurityProvider#HANDLER_NAME} and added to the handler queue.
      */
     ChannelHandler initChannel(SocketChannel ch);
