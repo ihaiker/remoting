@@ -9,6 +9,8 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.ipfilter.IpFilterRule;
+import io.netty.handler.ipfilter.RuleBasedIpFilter;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -24,6 +26,7 @@ import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -54,6 +57,9 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
     //@formatter:on
 
     protected Protector<Channel> protector;
+
+    @Getter @Setter
+    protected RuleBasedIpFilter ruleBasedIpFilter;
 
     static {
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
@@ -142,8 +148,12 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
-                        beforeInitChannel(ch);
                         ChannelPipeline pipeline = ch.pipeline();
+                        //ipFilter
+                        if (getRuleBasedIpFilter() != null) {
+                            pipeline.addLast(RuleBasedIpFilter.class.getSimpleName(), getRuleBasedIpFilter());
+                        }
+                        beforeInitChannel(ch);
                         final CoderProvider coderProvider = getCoderProvider();
                         pipeline.addLast(getEventExecutorGroup(),
                                 coderProvider.encode(), coderProvider.decode(),
