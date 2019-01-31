@@ -45,7 +45,7 @@ public class JKSConfig {
     private StormFrom stormFrom = StormFrom.FILE;
 
 
-    private JKSConfig() {
+    protected JKSConfig() {
     }
 
     /**

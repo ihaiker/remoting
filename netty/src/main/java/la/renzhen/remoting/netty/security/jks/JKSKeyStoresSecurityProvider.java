@@ -10,9 +10,11 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.util.Base64;
 
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
@@ -78,7 +80,8 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
     protected InputStream loadStream(String store, String path) throws IOException {
         switch (jksConfig.stormFrom()) {
             case BASE64:
-                return null;
+                byte[] bytes = Base64.getDecoder().decode(path);
+                return new ByteArrayInputStream(bytes);
             case RESOURCE:
                 return JKSKeyStoresSecurityProvider.class.getResourceAsStream(path);
             default:
