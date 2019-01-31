@@ -1,4 +1,4 @@
-package la.renzhen.remoting.code;
+package la.renzhen.remoting.core;
 
 import la.renzhen.remoting.InvokeCallback;
 import la.renzhen.remoting.RemotingChannel;

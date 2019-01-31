@@ -1,12 +1,10 @@
-package la.renzhen.remoting.code;
+package la.renzhen.remoting.core;
 
 import la.renzhen.remoting.ChannelEvent;
 import la.renzhen.remoting.ChannelEventListener;
-import la.renzhen.remoting.Remoting;
 import la.renzhen.remoting.commons.ServiceThread;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;

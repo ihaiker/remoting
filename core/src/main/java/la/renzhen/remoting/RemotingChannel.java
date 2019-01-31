@@ -3,6 +3,8 @@ package la.renzhen.remoting;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.EqualsAndHashCode;
 
+import java.util.Map;
+
 /**
  * wrapper of the connector in different implementations.
  *
@@ -22,6 +24,12 @@ public interface RemotingChannel<Channel> {
     boolean isOK();
 
     boolean isWritable();
+
+    String getUnique();
+
+    Map<String,String> getAttrs();
+
+    String getModule();
 
     default void writeAndFlush(RemotingCommand command) {
         this.writeAndFlush(command, null);

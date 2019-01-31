@@ -7,14 +7,13 @@ import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import la.renzhen.remoting.RemotingConfig;
 import la.renzhen.remoting.RemotingException;
-import la.renzhen.remoting.code.RemotingAbstract;
+import la.renzhen.remoting.core.RemotingAbstract;
 import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.netty.coder.CoderProvider;
 import la.renzhen.remoting.netty.coder.lfcode.DefaultCoderProvider;
 import la.renzhen.remoting.netty.security.SecurityProvider;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>

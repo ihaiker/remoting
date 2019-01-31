@@ -7,6 +7,10 @@ import io.netty.channel.ChannelHandlerContext;
 import la.renzhen.remoting.RemotingChannel;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.protocol.RemotingCommand;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.Map;
 
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
@@ -14,8 +18,13 @@ import la.renzhen.remoting.protocol.RemotingCommand;
  */
 public class NettyChannel implements RemotingChannel<Channel> {
 
+    //@formatter:off
     private Channel channel;
     private String address;
+    @Setter @Getter String unique;
+    @Setter @Getter Map<String,String> attrs;
+    @Setter @Getter String module;
+    //@formatter:on
 
     public NettyChannel(ChannelHandlerContext ctx) {
         this.channel = ctx.channel();
@@ -39,7 +48,7 @@ public class NettyChannel implements RemotingChannel<Channel> {
 
     @Override
     public boolean isOK() {
-        return channel != null && channel.isRegistered() && channel.isActive();
+        return channel != null && channel.isActive();
     }
 
     @Override

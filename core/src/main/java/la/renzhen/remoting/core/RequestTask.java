@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package la.renzhen.remoting.code;
+package la.renzhen.remoting.core;
 
 
 import la.renzhen.remoting.RemotingChannel;

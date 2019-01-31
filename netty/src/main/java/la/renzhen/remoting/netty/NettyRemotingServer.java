@@ -18,6 +18,7 @@ import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import la.renzhen.remoting.*;
 import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.netty.coder.CoderProvider;
+import la.renzhen.remoting.netty.handler.ClientInfoHandler;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
 import la.renzhen.remoting.protocol.RemotingCommand;
@@ -129,6 +130,31 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
         return defender;
     }
 
+
+    protected ChannelInitializer<SocketChannel> getChannelInitializer() {
+        return new ChannelInitializer<SocketChannel>() {
+            @Override
+            public void initChannel(SocketChannel ch) throws Exception {
+                ChannelPipeline pipeline = ch.pipeline();
+                //ipFilter
+                if (getRuleBasedIpFilter() != null) {
+                    pipeline.addLast(RuleBasedIpFilter.class.getSimpleName(), getRuleBasedIpFilter());
+                }
+                beforeInitChannel(ch);
+                final CoderProvider coderProvider = getCoderProvider();
+                pipeline.addLast(getEventExecutorGroup(),
+                        coderProvider.encode(), coderProvider.decode(),
+                        new IdleStateHandler(nettyServerConfig.getReaderIdleTimeSeconds(),
+                                nettyServerConfig.getWriterIdleTimeSeconds(), nettyServerConfig.getAllIdleTimeSeconds()),
+                        new NettyConnectManageHandler()
+                );
+                pipeline.addLast(getEventExecutorGroup(), ClientInfoHandler.class.getSimpleName(), new ClientInfoHandler());
+                pipeline.addLast(getEventExecutorGroup(), new NettyServerHandler());
+                afterInitChannel(ch);
+            }
+        };
+    }
+
     @Override
     protected void startupTCPListener() {
         super.startupTCPListener();
@@ -141,29 +167,7 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
                 .childOption(ChannelOption.SO_SNDBUF, nettyServerConfig.getSocketSndBufSize())
                 .childOption(ChannelOption.SO_RCVBUF, nettyServerConfig.getSocketRcvBufSize())
                 .localAddress(getListenerAddress())
-                .childHandler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    public void initChannel(SocketChannel ch) throws Exception {
-                        ChannelPipeline pipeline = ch.pipeline();
-                        //ipFilter
-                        if (getRuleBasedIpFilter() != null) {
-                            pipeline.addLast(RuleBasedIpFilter.class.getSimpleName(), getRuleBasedIpFilter());
-                        }
-                        beforeInitChannel(ch);
-                        final CoderProvider coderProvider = getCoderProvider();
-                        pipeline.addLast(getEventExecutorGroup(),
-                                coderProvider.encode(), coderProvider.decode(),
-                                new IdleStateHandler(nettyServerConfig.getReaderIdleTimeSeconds(), nettyServerConfig.getWriterIdleTimeSeconds(),
-                                        nettyServerConfig.getAllIdleTimeSeconds())
-                        );
-
-                        pipeline.addLast(getEventExecutorGroup(),
-                                new NettyConnectManageHandler(),
-                                new NettyServerHandler()
-                        );
-                        afterInitChannel(ch);
-                    }
-                });
+                .childHandler(getChannelInitializer());
 
         if (nettyServerConfig.isPooledByteBufAllocatorEnable()) {
             childHandler.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);

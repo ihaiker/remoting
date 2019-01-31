@@ -97,6 +97,23 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
         }
     }
 
+    protected ChannelInitializer<SocketChannel> getChannelInitializer(){
+        return new ChannelInitializer<SocketChannel>() {
+            @Override
+            public void initChannel(SocketChannel ch) throws Exception {
+                beforeInitChannel(ch);
+                ChannelPipeline pipeline = ch.pipeline();
+                final CoderProvider coderProvider = getCoderProvider();
+                pipeline.addLast(getEventExecutorGroup(),
+                        coderProvider.encode(), coderProvider.decode(),
+                        new IdleStateHandler(nettyClientConfig.getReaderIdleTimeSeconds(), nettyClientConfig.getWriterIdleTimeSeconds(),
+                                nettyClientConfig.getAllIdleTimeSeconds()),
+                        new NettyConnectManageHandler(), new NettyClientHandler());
+                afterInitChannel(ch);
+            }
+        };
+    }
+
     @Override
     protected void startupTCPListener() {
         super.startupTCPListener();
@@ -107,20 +124,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, nettyClientConfig.getConnectTimeoutMillis())
                 .option(ChannelOption.SO_SNDBUF, nettyClientConfig.getSocketSndBufSize())
                 .option(ChannelOption.SO_RCVBUF, nettyClientConfig.getSocketRcvBufSize())
-                .handler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    public void initChannel(SocketChannel ch) throws Exception {
-                        beforeInitChannel(ch);
-                        ChannelPipeline pipeline = ch.pipeline();
-                        final CoderProvider coderProvider = getCoderProvider();
-                        pipeline.addLast(getEventExecutorGroup(),
-                                coderProvider.encode(), coderProvider.decode(),
-                                new IdleStateHandler(nettyClientConfig.getReaderIdleTimeSeconds(), nettyClientConfig.getWriterIdleTimeSeconds(),
-                                        nettyClientConfig.getAllIdleTimeSeconds()),
-                                new NettyConnectManageHandler(), new NettyClientHandler());
-                        afterInitChannel(ch);
-                    }
-                });
+                .handler(getChannelInitializer());
 
         this.connectToServer();
     }
