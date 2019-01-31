@@ -8,7 +8,6 @@ import io.netty.channel.socket.SocketChannel;
  * @version 2019-01-29 14:41
  */
 public interface SecurityProvider {
-
     String HANDLER_NAME = "security";
 
     /**

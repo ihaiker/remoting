@@ -2,7 +2,6 @@ package la.renzhen.remoting.netty.security;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import lombok.Getter;
 
@@ -17,33 +16,32 @@ import java.io.InputStream;
  */
 public abstract class AbstractSecurityProvider implements SecurityProvider {
 
-    @Getter
-    private final boolean server;
-    @Getter
-    private final boolean auth;
+    //@formatter:off
+    @Getter private final boolean server;
+    @Getter private final boolean auth;
+    @Getter private final boolean startTls;
+    //@formatter:on
 
-    public AbstractSecurityProvider(boolean server, boolean auth) {
+    public AbstractSecurityProvider(final boolean server, final boolean auth, final boolean startTls) {
         this.server = server;
         this.auth = auth;
+        this.startTls = startTls;
     }
 
     public ChannelHandler initChannel(SocketChannel ch) {
-        SslContext sslContext = (isServer() ? getServerSSlContext(ch) : getClientSSlContext(ch));
-        SSLEngine sslEngine = sslContext.newEngine(ch.alloc());
+        SSLEngine  sslEngine = newEngine(ch);
         if (isServer()) {
             sslEngine.setUseClientMode(false);//服务器模式
             if (auth) {
-                sslEngine.setNeedClientAuth(true);//需要客户端验证
+                sslEngine.setNeedClientAuth(auth);//需要验证客户端
             }
         } else {
             sslEngine.setUseClientMode(true);//客户方模式
         }
-        return new SslHandler(sslEngine, true);
+        return new SslHandler(sslEngine, startTls);
     }
 
-    protected abstract SslContext getServerSSlContext(SocketChannel ch);
-
-    protected abstract SslContext getClientSSlContext(SocketChannel ch);
+    protected abstract SSLEngine newEngine(SocketChannel ch);
 
     protected InputStream loadStream(String path) throws IOException {
         return new FileInputStream(path);

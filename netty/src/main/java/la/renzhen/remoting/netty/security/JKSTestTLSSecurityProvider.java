@@ -1,4 +1,4 @@
-package la.renzhen.remoting.netty.security.test;
+package la.renzhen.remoting.netty.security;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.socket.SocketChannel;
@@ -20,11 +20,11 @@ import java.security.KeyStore;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-30 20:05
  */
-public class TestTLSSecurityProvider implements SecurityProvider {
+public class JKSTestTLSSecurityProvider implements SecurityProvider {
 
     protected boolean server;
 
-    public TestTLSSecurityProvider(boolean server) {
+    public JKSTestTLSSecurityProvider(boolean server) {
         this.server = server;
     }
 
@@ -51,7 +51,6 @@ public class TestTLSSecurityProvider implements SecurityProvider {
     private static SSLContext SERVER_CONTEXT;//服务器安全套接字协议
 
     private static SSLContext CLIENT_CONTEXT;//客户端安全套接字协议
-
 
 
     public static SslContext getServerContext2(String pkPath, String caPath) {
@@ -108,7 +107,6 @@ public class TestTLSSecurityProvider implements SecurityProvider {
             }
         }
     }
-
 
 
     public static SSLContext getServerContext(String pkPath, String caPath) {
@@ -190,7 +188,7 @@ public class TestTLSSecurityProvider implements SecurityProvider {
                 tf.init(tks);
             }
 
-           /// CLIENT_CONTEXT = SSLContext.getInstance(PROTOCOL);
+            /// CLIENT_CONTEXT = SSLContext.getInstance(PROTOCOL);
             //初始化此上下文
             //参数一：认证的密钥      参数二：对等信任认证  参数三：伪随机数生成器 。 由于单向认证，服务端不用验证客户端，所以第二个参数为null
             //CLIENT_CONTEXT.init(kmf.getKeyManagers(), tf.getTrustManagers(), null);
