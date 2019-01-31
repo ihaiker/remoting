@@ -23,6 +23,7 @@ import la.renzhen.remoting.netty.security.SecurityProvider;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
 import la.renzhen.remoting.protocol.RemotingCommand;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,22 +38,22 @@ import java.util.concurrent.*;
 public class NettyRemotingServer extends NettyRemoting implements RemotingServer<Channel> {
 
     //@formatter:off
-    private final String serverName;
-    private final ServerBootstrap serverBootstrap;
-    private EventLoopGroup eventLoopGroupSelector;
-    private EventLoopGroup eventLoopGroupBoss;
+    protected final String serverName;
+    protected final ServerBootstrap serverBootstrap;
+    protected EventLoopGroup eventLoopGroupSelector;
+    protected EventLoopGroup eventLoopGroupBoss;
 
-    private final NettyServerConfig nettyServerConfig;
+    protected final NettyServerConfig nettyServerConfig;
 
     //final ChannelGroup channels =  new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-    private final ConcurrentMap<String /* addr */, NettyChannel> channelTables = new ConcurrentHashMap<>();
+    protected final ConcurrentMap<String /* addr */, NettyChannel> channelTables = new ConcurrentHashMap<>();
 
-    private NettyServerConfig serverConfig;
+    protected NettyServerConfig serverConfig;
 
     protected ExecutorService callbackExecutor;
     //@formatter:on
 
-    //TODO 白名单黑名单设计
+    protected Protector<Channel> protector;
 
     static {
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
@@ -118,9 +119,17 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
     }
 
     @Override
+    public void setProtector(Protector<Channel> protector) {
+        this.protector = protector;
+    }
+
+    public Protector<Channel> getProtector() {
+        return protector;
+    }
+
+    @Override
     protected void startupTCPListener() {
         super.startupTCPListener();
-
         ServerBootstrap childHandler = this.serverBootstrap.group(this.eventLoopGroupBoss, this.eventLoopGroupSelector)
                 .channel(useEpoll() ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
                 .option(ChannelOption.SO_BACKLOG, 1024)
@@ -218,6 +227,11 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
         final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
         NettyChannel nettyChannel = new NettyChannel(ctx);
         channelTables.put(remoteAddress, nettyChannel);
+
+        final Protector<Channel> protector = getProtector();
+        if (protector != null && !protector.checked(nettyChannel)) {
+            NettyUtils.closeChannel(ctx.channel());
+        }
     }
 
     protected void channelUnregisteredHandler(ChannelHandlerContext ctx) {

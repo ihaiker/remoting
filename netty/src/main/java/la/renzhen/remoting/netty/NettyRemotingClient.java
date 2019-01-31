@@ -39,7 +39,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
 
     private final EventLoopGroup eventLoopGroupWorker;
 
-    private NettyChannel channel;
+    private volatile NettyChannel channel;
 
     /**
      * Invoke the callback methods in this executor when process response.
@@ -133,8 +133,8 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
         String address = nettyClientConfig.getHost() + ":" + nettyClientConfig.getPort();
         ChannelFuture channelFuture = this.bootstrap.connect(nettyClientConfig.getHost(), nettyClientConfig.getPort());
         try {
-            //TODO cf.channel().closeFuture().sync();
             channelFuture.awaitUninterruptibly(nettyClientConfig.getConnectTimeoutMillis());
+            //channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
             throw new RemotingException(RemotingException.Type.Connect, address, e);
         }
