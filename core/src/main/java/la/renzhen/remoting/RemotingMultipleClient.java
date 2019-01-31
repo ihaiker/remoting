@@ -18,4 +18,6 @@ public interface RemotingMultipleClient<Channel> extends RemotingClient<Channel>
 
     void invokeOneway(final String address, final RemotingCommand request, final long timeoutMillis)
             throws InterruptedException, RemotingException;
+
+    //TODO 多路客户端
 }

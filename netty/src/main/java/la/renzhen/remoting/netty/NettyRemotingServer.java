@@ -9,26 +9,21 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.ipfilter.IpFilterRule;
 import io.netty.handler.ipfilter.RuleBasedIpFilter;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import la.renzhen.remoting.*;
 import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.netty.coder.CoderProvider;
-import la.renzhen.remoting.netty.coder.lfcode.DefaultCoderProvider;
-import la.renzhen.remoting.netty.security.SecurityProvider;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
@@ -56,9 +51,10 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
     protected ExecutorService callbackExecutor;
     //@formatter:on
 
-    protected Protector<Channel> protector;
+    protected RemotingDefender<Channel> defender;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     protected RuleBasedIpFilter ruleBasedIpFilter;
 
     static {
@@ -125,12 +121,12 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
     }
 
     @Override
-    public void setProtector(Protector<Channel> protector) {
-        this.protector = protector;
+    public void setDefender(RemotingDefender<Channel> defender) {
+        this.defender = defender;
     }
 
-    public Protector<Channel> getProtector() {
-        return protector;
+    public RemotingDefender<Channel> getDefender() {
+        return defender;
     }
 
     @Override
@@ -158,7 +154,10 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
                         pipeline.addLast(getEventExecutorGroup(),
                                 coderProvider.encode(), coderProvider.decode(),
                                 new IdleStateHandler(nettyServerConfig.getReaderIdleTimeSeconds(), nettyServerConfig.getWriterIdleTimeSeconds(),
-                                        nettyServerConfig.getAllIdleTimeSeconds()),
+                                        nettyServerConfig.getAllIdleTimeSeconds())
+                        );
+
+                        pipeline.addLast(getEventExecutorGroup(),
                                 new NettyConnectManageHandler(),
                                 new NettyServerHandler()
                         );
@@ -237,11 +236,6 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
         final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
         NettyChannel nettyChannel = new NettyChannel(ctx);
         channelTables.put(remoteAddress, nettyChannel);
-
-        final Protector<Channel> protector = getProtector();
-        if (protector != null && !protector.checked(nettyChannel)) {
-            NettyUtils.closeChannel(ctx.channel());
-        }
     }
 
     protected void channelUnregisteredHandler(ChannelHandlerContext ctx) {

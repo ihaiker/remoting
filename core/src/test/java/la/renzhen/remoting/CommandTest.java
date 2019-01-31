@@ -64,13 +64,12 @@ public class CommandTest {
         user.setName("haiker");
         user.setAddress("Beijing,北京");
         user.setEmail("wo@renzhen.la");
-        user.setAge(34);
-        user.setLike(Lists.newArrayList("钱", "权", "人")); //够庸俗吧，人就是月没有什么越想得到什么，
+        user.setLike(Lists.newArrayList("money", "power", "women")); //wawo
 
         HashMap<String, String> tags = new HashMap<>();
-        tags.put("java", "Primary school student");
-        tags.put("go", "will use");
-        tags.put("data,ai", "what......,haddop");
+        tags.put("java", "test1 test2 test3");
+        tags.put("go", "demo1");
+        tags.put("data,ai", "what......");
         user.setTags(tags);
     }
     @Test

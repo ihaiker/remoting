@@ -17,6 +17,8 @@ public class NettyClientConfig extends RemotingConfig implements Cloneable {
 
     private boolean closeSocketIfTimeout = false;
 
+    private String authUserName;
+    private String authPassword;
 
     @Override
     public Object clone() throws CloneNotSupportedException {
