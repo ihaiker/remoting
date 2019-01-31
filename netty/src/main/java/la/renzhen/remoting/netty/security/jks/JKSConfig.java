@@ -14,6 +14,10 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true, fluent = true)
 public class JKSConfig {
 
+    public enum StormFrom {
+        BASE64, FILE, RESOURCE
+    }
+
     /**
      * Is it a server configuration?
      */
@@ -24,7 +28,8 @@ public class JKSConfig {
      */
     private boolean twoway;
 
-    @Setter(AccessLevel.PUBLIC) @Getter(AccessLevel.PUBLIC) private boolean startTls = false;
+    @Setter(AccessLevel.PUBLIC) @Getter(AccessLevel.PUBLIC)
+    private boolean startTls = false;
 
     private String keystore;
 
@@ -37,7 +42,8 @@ public class JKSConfig {
      * it placed in the resource file, unless placed in the hard disk directory, defalut is false.
      */
     @Setter(AccessLevel.PUBLIC) @Getter(AccessLevel.PUBLIC)
-    private boolean fromResource = false;
+    private StormFrom stormFrom = StormFrom.FILE;
+
 
     private JKSConfig() {
     }

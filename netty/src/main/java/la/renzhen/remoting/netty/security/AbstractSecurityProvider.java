@@ -29,7 +29,7 @@ public abstract class AbstractSecurityProvider implements SecurityProvider {
     }
 
     public ChannelHandler initChannel(SocketChannel ch) {
-        SSLEngine  sslEngine = newEngine(ch);
+        SSLEngine sslEngine = newEngine(ch);
         if (isServer()) {
             sslEngine.setUseClientMode(false);//服务器模式
             if (auth) {
@@ -43,7 +43,7 @@ public abstract class AbstractSecurityProvider implements SecurityProvider {
 
     protected abstract SSLEngine newEngine(SocketChannel ch);
 
-    protected InputStream loadStream(String path) throws IOException {
+    protected InputStream loadStream(String store /*keystore,truststore*/, String path) throws IOException {
         return new FileInputStream(path);
     }
 }

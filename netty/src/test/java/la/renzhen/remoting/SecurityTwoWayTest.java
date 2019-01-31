@@ -13,41 +13,33 @@ import java.util.concurrent.TimeUnit;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-28 16:07
  */
-public class SecurityTestTest extends RemotingNettyTest {
+public class SecurityTwoWayTest extends RemotingNettyTest {
+
+
+    String password = "remoting";
+    JKSConfig.StormFrom stormFrom = JKSConfig.StormFrom.RESOURCE;
 
     @Override
     public void registerTestProcessor(NettyRemoting remoting) {
         super.registerTestProcessor(remoting);
-
         boolean server = remoting instanceof NettyRemotingServer;
-        remoting.setModule(server ? "Server" : "Client");
-        //remoting.setSecurityProvider(new InternalSecurityProvider(server));
-        //remoting.setSecurityProvider(new JKSTestTLSSecurityProvider(server));
 
-        String ROOT = "/Users/haiker/Documents/project/myself/JavaWork/remoting/netty/src/main/resources";
-
-        JKSConfig config;
-        String password = "nettyDemo";
-
-        //oneway
-        if (server) {
-            String path = ROOT + "/certs/oneway/serverStore.jks";
-            config = JKSConfig.onewayAuthServer(path, password);
-        } else {
-            String path = ROOT + "/certs/oneway/clientStore.jks";
-            config = JKSConfig.onewayAuthClient(path, password);
+        String ROOT = "./src/main/resources";
+        if (stormFrom == JKSConfig.StormFrom.RESOURCE) {
+            ROOT = "";
         }
 
-        //twoway
-        /*if (server) {
-            String path = ROOT + "/certs/test/serverStore.jks";
-            config = JKSConfig.twowayAuthServer(path, path, password);
+        JKSConfig config;
+        if (server) {
+            String keystore = ROOT + "/certs/jks/server.jks";
+            String truststore = ROOT + "/certs/jks/serverTrust.jks";
+            config = JKSConfig.twowayAuthServer(keystore, truststore, password);
         } else {
-            String path = ROOT + "/certs/test/clientStore.jks";
-            config = JKSConfig.twowayAuthClient(path, path, password);
-        }*/
-
-        //config.fromResource(true);
+            String keystore = ROOT + "/certs/jks/client.jks";
+            String truststore = ROOT + "/certs/jks/clientTrust.jks";
+            config = JKSConfig.twowayAuthClient(keystore, truststore, password);
+        }
+        config.stormFrom(stormFrom);
         remoting.setSecurityProvider(new JKSKeyStoresSecurityProvider(config));
     }
 

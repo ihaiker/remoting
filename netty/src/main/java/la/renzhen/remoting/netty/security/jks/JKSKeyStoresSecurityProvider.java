@@ -18,7 +18,6 @@ import java.security.KeyStore;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-30 14:15
  */
-
 public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
 
     private static final String PROTOCOL = "TLS";
@@ -53,7 +52,7 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
         KeyManagerFactory kmf = null;
         if (keystore != null) {
             KeyStore ks = KeyStore.getInstance("JKS");
-            ks.load(loadStream(keystore), password.toCharArray());
+            ks.load(loadStream("keystore", keystore), password.toCharArray());
             //Set up key manager factory to use our key store
             kmf = KeyManagerFactory.getInstance("SunX509");
             kmf.init(ks, password.toCharArray());
@@ -63,7 +62,7 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
         TrustManagerFactory tmf = null;
         if (!isServer() || isAuth()) {
             KeyStore ts = KeyStore.getInstance("JKS");
-            ts.load(loadStream(truststore), password.toCharArray());
+            ts.load(loadStream("truststore", truststore), password.toCharArray());
             // set up trust manager factory to use our trust store
             tmf = TrustManagerFactory.getInstance("SunX509");
             tmf.init(ts);
@@ -76,10 +75,14 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
         return sslContext.createSSLEngine();
     }
 
-    protected InputStream loadStream(String path) throws IOException {
-        if (this.jksConfig.fromResource()) {
-            return JKSKeyStoresSecurityProvider.class.getClassLoader().getResourceAsStream(path);
+    protected InputStream loadStream(String store, String path) throws IOException {
+        switch (jksConfig.stormFrom()) {
+            case BASE64:
+                return null;
+            case RESOURCE:
+                return JKSKeyStoresSecurityProvider.class.getResourceAsStream(path);
+            default:
+                return super.loadStream(store, path);
         }
-        return super.loadStream(path);
     }
 }
