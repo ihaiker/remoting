@@ -18,9 +18,10 @@ import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import la.renzhen.remoting.*;
 import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.netty.coder.CoderProvider;
-import la.renzhen.remoting.netty.handler.ClientInfoHandler;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
+import la.renzhen.remoting.protocol.ClientInfoHeader;
+import la.renzhen.remoting.protocol.CommandCustomHeader;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
 import lombok.Setter;
@@ -68,6 +69,7 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
 
     public NettyRemotingServer(final String serverName, final NettyServerConfig config) {
         super(config);
+        setModule("RemotingServer");
 
         this.serverName = serverName;
         this.nettyServerConfig = config;
@@ -146,10 +148,9 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
                         coderProvider.encode(), coderProvider.decode(),
                         new IdleStateHandler(nettyServerConfig.getReaderIdleTimeSeconds(),
                                 nettyServerConfig.getWriterIdleTimeSeconds(), nettyServerConfig.getAllIdleTimeSeconds()),
-                        new NettyConnectManageHandler()
-                );
-                pipeline.addLast(getEventExecutorGroup(), ClientInfoHandler.class.getSimpleName(), new ClientInfoHandler());
-                pipeline.addLast(getEventExecutorGroup(), new NettyServerHandler());
+                        new NettyConnectManageHandler(),
+                        new ClientInfoHandler(),
+                        new NettyServerHandler());
                 afterInitChannel(ch);
             }
         };
@@ -227,11 +228,35 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
         }
     }
 
+    class ClientInfoHandler extends SimpleChannelInboundHandler<RemotingCommand> {
+        @Override
+        protected void channelRead0(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
+            final String remoteAddr = NettyUtils.parseChannelRemoteAddr(ctx.channel());
+            NettyChannel channel = (NettyChannel) getChannel(remoteAddr);
+            ClientInfoHeader header = request.getCustomHeaders(ClientInfoHeader.class);
+            channel.fromHeader(header);
+
+            ClientInfoHeader responseHeader = new ClientInfoHeader();
+            responseHeader.setUnique(getUnique()).setModule(getModule()).setAttrs(getAttrs());
+            RemotingCommand response = RemotingCommand.response(request);
+            response.setCustomHeaders(responseHeader);
+
+            if (getDefender() != null) {
+                if (!getDefender().checked(channel, header)) {
+                    return;
+                }
+            }
+
+            ctx.pipeline().remove(this);
+        }
+    }
+
 
     class NettyServerHandler extends SimpleChannelInboundHandler<RemotingCommand> {
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, RemotingCommand msg) throws Exception {
-            RemotingChannel<Channel> channel = getChannel(NettyUtils.parseChannelRemoteAddr(ctx.channel()));
+            final String remoteAddr = NettyUtils.parseChannelRemoteAddr(ctx.channel());
+            RemotingChannel<Channel> channel = getChannel(remoteAddr);
             processMessageReceived(channel, msg);
         }
     }

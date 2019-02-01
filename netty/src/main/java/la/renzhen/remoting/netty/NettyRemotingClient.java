@@ -12,8 +12,11 @@ import la.renzhen.remoting.*;
 import la.renzhen.remoting.commons.NamedThreadFactory;
 import la.renzhen.remoting.netty.coder.CoderProvider;
 import la.renzhen.remoting.netty.utils.NettyUtils;
+import la.renzhen.remoting.protocol.ClientInfoHeader;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 import java.net.SocketAddress;
 import java.util.Optional;
@@ -25,7 +28,7 @@ import java.util.concurrent.Executors;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-27 20:17
  */
-
+@Accessors(chain = true)
 public class NettyRemotingClient extends NettyRemoting implements RemotingClient<Channel> {
 
     //@formatter:off
@@ -37,10 +40,10 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
 
     private volatile NettyChannel channel;
 
-    /**
-     * Invoke the callback methods in this executor when process response.
-     */
+    /** Invoke the callback methods in this executor when process response. */
     private ExecutorService callbackExecutor;
+
+    @Setter @Getter private RemotingAuth<Channel> auth;
     //@formatter:on
 
     public NettyRemotingClient(final NettyClientConfig nettyClientConfig) {
@@ -49,6 +52,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
 
     public NettyRemotingClient(final String clientName, final NettyClientConfig nettyClientConfig) {
         super(nettyClientConfig);
+        setModule("RemotingClient");
         this.clientName = clientName;
         this.nettyClientConfig = nettyClientConfig;
 
@@ -89,15 +93,16 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
                 .orElseGet(this::getPublicExecutor);
     }
 
-    public void setCallbackExecutor(ExecutorService callbackExecutor) {
+    public NettyRemotingClient setCallbackExecutor(ExecutorService callbackExecutor) {
         final ExecutorService oldExecutorService = this.callbackExecutor;
         this.callbackExecutor = callbackExecutor;
         if (oldExecutorService != null) {
             oldExecutorService.shutdown();
         }
+        return this;
     }
 
-    protected ChannelInitializer<SocketChannel> getChannelInitializer(){
+    protected ChannelInitializer<SocketChannel> getChannelInitializer() {
         return new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
@@ -147,7 +152,43 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
         }
         NettyChannel channel = new NettyChannel(channelFuture);
         log.info("connect to server: {}", address);
+
+        ClientInfoHeader header = reportClient(channel);
+        log.info("response server info: unique:{}, module:{}, attrs:{}",
+                header.getUnique(), header.getModule(), header.getAttrs());
         return channel;
+    }
+
+    public ClientInfoHeader reportClient(NettyChannel channel) {
+        //report client
+        ClientInfoHeader requestHeader = new ClientInfoHeader();
+        requestHeader.setUnique(getUnique());
+        requestHeader.setModule(getModule());
+        requestHeader.setAttrs(getAttrs());
+        if (getAuth() != null) {
+            String authUsername = nettyClientConfig.getAuthUsername();
+            String authPassword = nettyClientConfig.getAuthPassword();
+            log.info("enable auth: {} {}", channel.address(), authUsername);
+            requestHeader.setAuthUsername(authUsername);
+            String authSign = getAuth().encode(channel, authUsername, authPassword);
+            requestHeader.setAuthSign(authSign);
+        }
+
+        log.info("report client info to server.");
+        RemotingCommand request = RemotingCommand.request(0).setCustomHeaders(requestHeader);
+        try {
+            RemotingCommand response = this.invokeSyncHandler(channel, request, nettyClientConfig.getConnectTimeoutMillis());
+            if (response.isSuccess()) {
+                ClientInfoHeader responseHeader = response.getCustomHeaders(ClientInfoHeader.class);
+                channel.fromHeader(responseHeader);
+                return requestHeader;
+            } else {
+                String error = response.getError();
+                throw new RemotingException(RemotingException.Type.Auth, error);
+            }
+        } catch (Exception e) {
+            throw new RemotingException(RemotingException.Type.Connect, e);
+        }
     }
 
     @Override

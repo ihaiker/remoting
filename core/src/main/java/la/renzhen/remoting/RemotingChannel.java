@@ -17,19 +17,19 @@ public interface RemotingChannel<Channel> {
         void operationComplete(boolean success, Throwable throwable);
     }
 
-    Channel getChannel();
-
-    String address();
-
-    boolean isOK();
-
-    boolean isWritable();
-
     String getUnique();
 
     Map<String,String> getAttrs();
 
     String getModule();
+
+    String address();
+
+    Channel getChannel();
+
+    boolean isOK();
+
+    boolean isWritable();
 
     default void writeAndFlush(RemotingCommand command) {
         this.writeAndFlush(command, null);

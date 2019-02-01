@@ -4,6 +4,7 @@ public class RemotingException extends RuntimeException {
     private static final long serialVersionUID = -5690687334570505110L;
 
     public enum Type {
+        Auth,
         /**
          * Command missing required fields
          */

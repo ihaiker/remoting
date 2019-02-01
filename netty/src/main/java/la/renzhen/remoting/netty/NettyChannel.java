@@ -6,6 +6,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import la.renzhen.remoting.RemotingChannel;
 import la.renzhen.remoting.netty.utils.NettyUtils;
+import la.renzhen.remoting.protocol.ClientInfoHeader;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
 import lombok.Setter;
@@ -54,6 +55,12 @@ public class NettyChannel implements RemotingChannel<Channel> {
     @Override
     public boolean isWritable() {
         return getChannel().isWritable();
+    }
+
+    public void fromHeader(ClientInfoHeader header){
+        setUnique(header.getUnique());
+        setModule(header.getModule());
+        setAttrs(header.getAttrs());
     }
 
     @Override

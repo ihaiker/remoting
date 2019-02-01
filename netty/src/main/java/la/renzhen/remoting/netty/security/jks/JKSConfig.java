@@ -28,7 +28,8 @@ public class JKSConfig {
      */
     private boolean twoway;
 
-    @Setter(AccessLevel.PUBLIC) @Getter(AccessLevel.PUBLIC)
+    @Setter(AccessLevel.PUBLIC)
+    @Getter(AccessLevel.PUBLIC)
     private boolean startTls = false;
 
     private String keystore;
@@ -41,7 +42,8 @@ public class JKSConfig {
      * Whether the file is placed in the resource file, if return true,
      * it placed in the resource file, unless placed in the hard disk directory, defalut is false.
      */
-    @Setter(AccessLevel.PUBLIC) @Getter(AccessLevel.PUBLIC)
+    @Setter(AccessLevel.PUBLIC)
+    @Getter(AccessLevel.PUBLIC)
     private StormFrom stormFrom = StormFrom.FILE;
 
 
@@ -76,8 +78,9 @@ public class JKSConfig {
     /**
      * Two-way authentication mode server configuration
      *
-     * @param keystore Keystore file path
-     * @param password the keystore password
+     * @param keystore   the keystore file path
+     * @param truststore the truststore file path
+     * @param password   the truststore password
      *
      * @return configuration
      */
