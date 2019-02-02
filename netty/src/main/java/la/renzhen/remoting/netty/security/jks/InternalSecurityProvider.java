@@ -1,5 +1,7 @@
 package la.renzhen.remoting.netty.security.jks;
 
+import la.renzhen.remoting.netty.security.StormFrom;
+
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-29 17:46
@@ -33,7 +35,7 @@ public class InternalSecurityProvider extends JKSKeyStoresSecurityProvider {
             }
         }
         config.password(KEY_PASSWORD);
-        config.stormFrom(JKSConfig.StormFrom.RESOURCE);
+        config.stormFrom(StormFrom.RESOURCE);
         return new InternalSecurityProvider(config);
     }
 }

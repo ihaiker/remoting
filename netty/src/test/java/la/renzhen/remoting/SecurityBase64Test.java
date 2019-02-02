@@ -2,6 +2,7 @@ package la.renzhen.remoting;
 
 import la.renzhen.remoting.netty.NettyRemoting;
 import la.renzhen.remoting.netty.NettyRemotingServer;
+import la.renzhen.remoting.netty.security.StormFrom;
 import la.renzhen.remoting.netty.security.jks.InternalSecurityProvider;
 import la.renzhen.remoting.netty.security.jks.JKSConfig;
 import la.renzhen.remoting.netty.security.jks.JKSKeyStoresSecurityProvider;
@@ -31,7 +32,7 @@ public class SecurityBase64Test extends RemotingNettyTest {
             String base = "/u3+7QAAAAIAAAABAAAAAgAIcmVtb3RpbmcAAAFoosvlhAAFWC41MDkAAANHMIIDQzCCAiugAwIBAgIEP2i+HDANBgkqhkiG9w0BAQsFADBSMQowCAYDVQQDDAEqMQswCQYDVQQGEwJDTjEQMA4GA1UEBxMHQmVpamluZzERMA8GA1UEChMIUmVtb3RpbmcxEjAQBgNVBAsTCURldmVsb3BlcjAeFw0xOTAxMzEwNzI0NTdaFw0yOTAxMjgwNzI0NTdaMFIxCjAIBgNVBAMMASoxCzAJBgNVBAYTAkNOMRAwDgYDVQQHEwdCZWlqaW5nMREwDwYDVQQKEwhSZW1vdGluZzESMBAGA1UECxMJRGV2ZWxvcGVyMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkKDZPOSRqiOs5n4amR3JBL1pnP/kH/GkQ7dSKE9COMl1lXp866B0foIBOQQ6ySUmPxIP3PJAjMEF/PCVMM2/DQe+4oidtk9IDbzJ/fOmeRy5bgTrHV5IJzM+9OXIc88RnImYzLKXzmebZWE50/jYNNqv9oZnQjaSofp6+vJhIvsPZ6+F4ZRh42PRnXNl6twLd4AAWiQkK9ZsPJCwNpsDUNl76pyQSZmXa2hGFw7WnXB/URJxQespI35mD0TraHroTMLfWpHCyJMB9XZr10iUfugTXsSQBOS3vX+9Y1Cpm652lBZcriJNRVjQNeVCB2Lh3SQjbbjg0w/MxCQ6IJDuowIDAQABoyEwHzAdBgNVHQ4EFgQUDy2avmyCwkIem5zhKqO/MfSR6NAwDQYJKoZIhvcNAQELBQADggEBAE7g1utDxkKt8JG7+ACxhm8ejOOfaHOB/o/6zE8QiZtuXtpyFkRijVeH0SyM7fmLOf+w370+eimQVSxOBgjchEFxkKOzhW1y/hfr3Bi8f7AgfaPfgbkdQrdV1fzNP6nqJK9oN3MR8itDP7T8aDPkvWJe2zoSBZ/Fur5lI5k+XGTUaQQEAEaeu9g0OGv22hyXnpXymPDBJFLUPPGLjPiJfbx2s2g0fHh/pZezbwGrapkTiO7CkocVsko7SCikaGd7cuHEwAkxiqdHhSOcqrgtLC7LnbKxKm0Vxi6syzxr8FfGL6R8fy50ARMF29aKDL55EtRpbU9aThH/hZHJSpZqUgvZcnijrn4lEnjJoVjdPMfJM1l8tg==";
             config = JKSConfig.onewayAuthClient(base, password);
         }
-        config.stormFrom(JKSConfig.StormFrom.BASE64);
+        config.stormFrom(StormFrom.BASE64);
         remoting.setSecurityProvider(new JKSKeyStoresSecurityProvider(config));
     }
 

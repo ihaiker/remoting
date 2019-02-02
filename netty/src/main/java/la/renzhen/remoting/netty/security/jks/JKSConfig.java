@@ -1,5 +1,6 @@
 package la.renzhen.remoting.netty.security.jks;
 
+import la.renzhen.remoting.netty.security.StormFrom;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,11 +14,6 @@ import lombok.experimental.Accessors;
 @Getter(AccessLevel.PACKAGE)
 @Accessors(chain = true, fluent = true)
 public class JKSConfig {
-
-    public enum StormFrom {
-        BASE64, FILE, RESOURCE
-    }
-
     /**
      * Is it a server configuration?
      */

@@ -2,6 +2,7 @@ package la.renzhen.remoting;
 
 import la.renzhen.remoting.netty.NettyRemoting;
 import la.renzhen.remoting.netty.NettyRemotingServer;
+import la.renzhen.remoting.netty.security.StormFrom;
 import la.renzhen.remoting.netty.security.jks.JKSConfig;
 import la.renzhen.remoting.netty.security.jks.JKSKeyStoresSecurityProvider;
 import la.renzhen.remoting.protocol.RemotingCommand;
@@ -17,7 +18,7 @@ public class SecurityTwoWayTest extends RemotingNettyTest {
 
 
     String password = "remoting";
-    JKSConfig.StormFrom stormFrom = JKSConfig.StormFrom.RESOURCE;
+    StormFrom stormFrom = StormFrom.RESOURCE;
 
     @Override
     public void registerTestProcessor(NettyRemoting remoting) {
@@ -25,7 +26,7 @@ public class SecurityTwoWayTest extends RemotingNettyTest {
         boolean server = remoting instanceof NettyRemotingServer;
 
         String ROOT = "./src/main/resources";
-        if (stormFrom == JKSConfig.StormFrom.RESOURCE) {
+        if (stormFrom == StormFrom.RESOURCE) {
             ROOT = "";
         }
 

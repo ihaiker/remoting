@@ -3,12 +3,15 @@ package la.renzhen.remoting.netty.security;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslHandler;
+import la.renzhen.remoting.netty.security.jks.JKSKeyStoresSecurityProvider;
 import lombok.Getter;
 
 import javax.net.ssl.SSLEngine;
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Base64;
 
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
@@ -43,7 +46,19 @@ public abstract class AbstractSecurityProvider implements SecurityProvider {
 
     protected abstract SSLEngine newEngine(SocketChannel ch);
 
-    protected InputStream loadStream(String store /*keystore,truststore*/, String path) throws IOException {
-        return new FileInputStream(path);
+    protected InputStream loadStream(String store, String path) throws IOException {
+        switch (getStormFrom()) {
+            case BASE64:
+                byte[] bytes = Base64.getDecoder().decode(path);
+                return new ByteArrayInputStream(bytes);
+            case RESOURCE:
+                return JKSKeyStoresSecurityProvider.class.getResourceAsStream(path);
+            default:
+                return new FileInputStream(path);
+        }
+    }
+
+    protected StormFrom getStormFrom() {
+        return StormFrom.RESOURCE;
     }
 }

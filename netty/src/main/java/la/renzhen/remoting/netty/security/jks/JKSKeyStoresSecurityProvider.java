@@ -3,6 +3,7 @@ package la.renzhen.remoting.netty.security.jks;
 import io.netty.channel.socket.SocketChannel;
 import la.renzhen.remoting.commons.Pair;
 import la.renzhen.remoting.netty.security.AbstractSecurityProvider;
+import la.renzhen.remoting.netty.security.StormFrom;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -77,15 +78,8 @@ public class JKSKeyStoresSecurityProvider extends AbstractSecurityProvider {
         return sslContext.createSSLEngine();
     }
 
-    protected InputStream loadStream(String store, String path) throws IOException {
-        switch (jksConfig.stormFrom()) {
-            case BASE64:
-                byte[] bytes = Base64.getDecoder().decode(path);
-                return new ByteArrayInputStream(bytes);
-            case RESOURCE:
-                return JKSKeyStoresSecurityProvider.class.getResourceAsStream(path);
-            default:
-                return super.loadStream(store, path);
-        }
+    @Override
+    protected StormFrom getStormFrom() {
+        return jksConfig.stormFrom();
     }
 }
