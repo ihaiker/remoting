@@ -17,11 +17,15 @@ import java.util.concurrent.*;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-27 11:39
  */
+@Getter
+public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, RemotingService, LoggerSupport {
 
-public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, RemotingService,LoggerSupport {
-
-    @Getter private String unique;
-    @Setter @Getter private String module = "Remoting";
+    private String unique;
+    @Setter
+    private String module = "Remoting";
+    @Setter
+    @Getter
+    Map<String, String> attrs;
 
     /**
      * Semaphore to limit maximum number of on-going asynchronous requests, which protects system memory footprint.
@@ -54,7 +58,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
      */
     protected Pair<RequestProcessor<Channel>, ExecutorService> defaultRequestProcessor;
 
-    private ExecutorService publicExecutor;
+    protected ExecutorService publicExecutor;
 
     /**
      * custom rpc hooks
@@ -81,10 +85,13 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
         }
     }
 
-    @Override
-    public Map<String, String> getAttrs() {
-        return new HashMap<>();
+    public void setAttr(String key, String value) {
+        if (this.attrs == null) {
+            this.attrs = new HashMap<>();
+        }
+        this.attrs.put(key, value);
     }
+
 
     @Override
     public void registerChannelEventListener(ChannelEventListener<Channel> channelEventListener) {

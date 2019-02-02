@@ -1,5 +1,6 @@
 package la.renzhen.remoting;
 
+import com.google.common.base.Charsets;
 import la.renzhen.remoting.protocol.CommandCustomHeader;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Data;
@@ -29,9 +30,10 @@ public class NettyTest extends RemotingNettyTest {
 
     @Test
     public void testSyncBody() throws Exception {
-        RemotingCommand request = RemotingCommand.request(0).setBody("body - test".getBytes());
+        RemotingCommand request = RemotingCommand.request(1).setBody("body - test".getBytes());
         RemotingCommand response = client.invokeSync(request, TimeUnit.SECONDS.toMillis(3));
-        assert "receiver body body - test".equals(response.getStringHeaders());
+        String body = new String(response.getBody(), Charsets.UTF_8);
+        assert "receiver body body - test".equals(body);
     }
 
     @Data
@@ -55,7 +57,7 @@ public class NettyTest extends RemotingNettyTest {
 
     @Test
     public void testSecurity() throws Exception {
-        
+
         RemotingCommand request = RemotingCommand.request(0).setStringHeaders("header - test");
         RemotingCommand response = client.invokeSync(request, TimeUnit.SECONDS.toMillis(3));
         assert "receiver header - test".equals(response.getStringHeaders());

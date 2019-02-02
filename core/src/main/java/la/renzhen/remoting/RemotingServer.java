@@ -25,5 +25,5 @@ public interface RemotingServer<Channel> extends Remoting<Channel>, RemotingServ
 
     Pair<RequestProcessor<Channel>, ExecutorService> getProcessor(final int requestCode);
 
-    void setDefender(RemotingDefender<Channel> protector);
+    void registerDefender(RemotingDefender<Channel> protector);
 }

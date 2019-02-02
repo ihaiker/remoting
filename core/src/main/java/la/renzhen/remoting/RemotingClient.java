@@ -1,9 +1,6 @@
 package la.renzhen.remoting;
 
-import la.renzhen.remoting.commons.Pair;
 import la.renzhen.remoting.protocol.RemotingCommand;
-
-import java.util.concurrent.ExecutorService;
 
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
@@ -21,4 +18,6 @@ public interface RemotingClient<Channel> extends Remoting<Channel>, RemotingServ
             throws InterruptedException, RemotingException;
 
     RemotingChannel<Channel> getChannel();
+
+    void registerAuth(RemotingAuth auth, String username,String password);
 }

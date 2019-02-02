@@ -1,7 +1,6 @@
 package la.renzhen.remoting;
 
 import la.renzhen.remoting.protocol.RemotingCommand;
-import lombok.EqualsAndHashCode;
 
 import java.util.Map;
 

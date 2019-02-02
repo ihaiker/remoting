@@ -2,7 +2,6 @@ package la.renzhen.remoting.core;
 
 import la.renzhen.remoting.RemotingChannel;
 import la.renzhen.remoting.RemotingDefender;
-import la.renzhen.remoting.protocol.ClientInfoHeader;
 
 import java.util.List;
 
@@ -19,9 +18,9 @@ public class MultipleRemotingDefender<Channel> implements RemotingDefender<Chann
     }
 
     @Override
-    public boolean checked(RemotingChannel<Channel> channel, ClientInfoHeader header) {
+    public boolean checked(RemotingChannel<Channel> channel) {
         for (RemotingDefender<Channel> defender : defenders) {
-            if (!defender.checked(channel, header)) {
+            if (!defender.checked(channel)) {
                 return false;
             }
         }

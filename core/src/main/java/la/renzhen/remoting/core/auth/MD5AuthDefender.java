@@ -5,11 +5,11 @@ import la.renzhen.remoting.RemotingAuth;
 import la.renzhen.remoting.RemotingChannel;
 import la.renzhen.remoting.RemotingDefender;
 import la.renzhen.remoting.commons.MD5Util;
-import la.renzhen.remoting.protocol.ClientInfoHeader;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.validation.constraints.NotNull;
+import java.util.Optional;
 
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
@@ -27,16 +27,15 @@ public class MD5AuthDefender<Channel> implements RemotingDefender<Channel>, Logg
     }
 
     @Override
-    public boolean checked(RemotingChannel<Channel> channel, ClientInfoHeader header) {
-        String unique = header.getUnique();
-        String module = header.getModule();
-        String authSign = header.getAuthSign();
-        String authUsername = header.getAuthUsername();
-        log.info("{},{} request auth userName={} sign={} ", module, unique, authUsername, authSign);
-
-        String authPassword = getUserAuthPassword(authUsername);
-        String checkSign = auth.encode(channel, authUsername, authPassword);
-        return checkSign.equals(authSign);
+    public boolean checked(RemotingChannel<Channel> channel) {
+        String unique = channel.getUnique();
+        String module = channel.getModule();
+        String username = Optional.ofNullable(channel.getAttrs()).map(s -> s.get(RemotingAuth.AUTH_USERNAME)).orElse("");
+        String signature = Optional.ofNullable(channel.getAttrs()).map(s -> s.get(RemotingAuth.AUTH_SIGNATURE)).orElse("");
+        log.info("{},{} request auth userName={} sign={} ", module, unique, username, signature);
+        String authPassword = getUserAuthPassword(username);
+        String checkSign = auth.signature(username, authPassword);
+        return checkSign.equals(signature);
     }
 
     public String getUserAuthPassword(String authUsername) {

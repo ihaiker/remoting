@@ -26,14 +26,12 @@ public abstract class RemotingNettyTest implements LoggerSupport {
         NettyServerConfig config = new NettyServerConfig();
         NettyRemotingServer remotingServer = new NettyRemotingServer(config);
         registerTestProcessor(remotingServer);
-        remotingServer.startup();
         return remotingServer;
     }
 
     public RemotingClient createRemotingClient() {
         NettyRemotingClient client = new NettyRemotingClient(new NettyClientConfig());
         registerTestProcessor(client);
-        client.startup();
         return client;
     }
 
@@ -56,7 +54,9 @@ public abstract class RemotingNettyTest implements LoggerSupport {
     @Before
     public void setup() throws InterruptedException {
         server = createRemotingServer();
+        server.startup();
         client = createRemotingClient();
+        client.startup();
     }
 
     @After

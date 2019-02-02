@@ -17,6 +17,7 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import la.renzhen.remoting.*;
 import la.renzhen.remoting.commons.NamedThreadFactory;
+import la.renzhen.remoting.commons.Pair;
 import la.renzhen.remoting.netty.coder.CoderProvider;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
@@ -47,8 +48,6 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
 
     //final ChannelGroup channels =  new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     protected final ConcurrentMap<String /* addr */, NettyChannel> channelTables = new ConcurrentHashMap<>();
-
-    protected NettyServerConfig serverConfig;
 
     protected ExecutorService callbackExecutor;
     //@formatter:on
@@ -124,7 +123,7 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
     }
 
     @Override
-    public void setDefender(RemotingDefender<Channel> defender) {
+    public void registerDefender(RemotingDefender<Channel> defender) {
         this.defender = defender;
     }
 
@@ -235,19 +234,33 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
             NettyChannel channel = (NettyChannel) getChannel(remoteAddr);
             ClientInfoHeader header = request.getCustomHeaders(ClientInfoHeader.class);
             channel.fromHeader(header);
+            log.info("client receiver info: {}", header);
 
-            ClientInfoHeader responseHeader = new ClientInfoHeader();
-            responseHeader.setUnique(getUnique()).setModule(getModule()).setAttrs(getAttrs());
             RemotingCommand response = RemotingCommand.response(request);
-            response.setCustomHeaders(responseHeader);
 
             if (getDefender() != null) {
-                if (!getDefender().checked(channel, header)) {
-                    return;
+                if (!getDefender().checked(channel)) {
+                    log.info("the client defender by {}", getDefender().getClass());
+                    response.setError(1,"Refuse to connect");
                 }
             }
 
-            ctx.pipeline().remove(this);
+            if(response.isSuccess()){
+                ctx.pipeline().remove(this);
+
+                ClientInfoHeader responseHeader = new ClientInfoHeader();
+                responseHeader.setUnique(getUnique()).setModule(getModule()).setAttrs(getAttrs());
+                response.setCustomHeaders(responseHeader);
+            }
+
+            Pair<RequestProcessor<Channel>, ExecutorService> pair = getDefaultRequestProcessor();
+            if (pair != null) {
+                pair.getSecond().submit(() -> {
+                    channel.writeAndFlush(response);
+                });
+            } else {
+                channel.writeAndFlush(response);
+            }
         }
     }
 

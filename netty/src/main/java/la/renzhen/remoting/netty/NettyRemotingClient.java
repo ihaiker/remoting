@@ -19,10 +19,13 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.net.SocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
@@ -43,7 +46,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
     /** Invoke the callback methods in this executor when process response. */
     private ExecutorService callbackExecutor;
 
-    @Setter @Getter private RemotingAuth<Channel> auth;
+    @Getter private RemotingAuth auth;
     //@formatter:on
 
     public NettyRemotingClient(final NettyClientConfig nettyClientConfig) {
@@ -159,19 +162,32 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
         return channel;
     }
 
+    @Override
+    public void registerAuth(RemotingAuth auth, String username, String password) {
+        this.auth = auth;
+        if (this.auth != null) {
+            this.setAttr(RemotingAuth.AUTH_USERNAME, username);
+            this.setAttr(RemotingAuth.AUTH_PASSWORD, password);
+        }
+    }
+
     public ClientInfoHeader reportClient(NettyChannel channel) {
         //report client
         ClientInfoHeader requestHeader = new ClientInfoHeader();
         requestHeader.setUnique(getUnique());
         requestHeader.setModule(getModule());
-        requestHeader.setAttrs(getAttrs());
-        if (getAuth() != null) {
-            String authUsername = nettyClientConfig.getAuthUsername();
-            String authPassword = nettyClientConfig.getAuthPassword();
+        requestHeader.setAttrs(new HashMap<>(getAttrs()));
+
+        final RemotingAuth auth = getAuth();
+        if (auth != null) {
+            final Map<String, String> attrs = requestHeader.getAttrs();
+            String authUsername = Optional.ofNullable(attrs).map(s -> s.get(RemotingAuth.AUTH_USERNAME)).orElse("");
+            String authPassword = Optional.ofNullable(attrs).map(s -> s.get(RemotingAuth.AUTH_PASSWORD)).orElse("");
             log.info("enable auth: {} {}", channel.address(), authUsername);
-            requestHeader.setAuthUsername(authUsername);
-            String authSign = getAuth().encode(channel, authUsername, authPassword);
-            requestHeader.setAuthSign(authSign);
+            String authSignature = auth.signature(authUsername, authPassword);
+            attrs.remove(RemotingAuth.AUTH_PASSWORD);
+            attrs.put(RemotingAuth.AUTH_SIGNATURE, authSignature);
+            requestHeader.setAttrs(attrs);
         }
 
         log.info("report client info to server.");
@@ -186,6 +202,8 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
                 String error = response.getError();
                 throw new RemotingException(RemotingException.Type.Auth, error);
             }
+        } catch (RemotingException e) {
+            throw e;
         } catch (Exception e) {
             throw new RemotingException(RemotingException.Type.Connect, e);
         }
