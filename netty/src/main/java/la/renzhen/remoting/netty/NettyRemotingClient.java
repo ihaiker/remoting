@@ -176,7 +176,10 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
         ClientInfoHeader requestHeader = new ClientInfoHeader();
         requestHeader.setUnique(getUnique());
         requestHeader.setModule(getModule());
-        requestHeader.setAttrs(new HashMap<>(getAttrs()));
+        Map<String, String> attr = getAttrs();
+        if(attr != null){
+            requestHeader.setAttrs(new HashMap<>(attr));
+        }
 
         final RemotingAuth auth = getAuth();
         if (auth != null) {

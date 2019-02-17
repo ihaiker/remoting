@@ -3,7 +3,9 @@
 DIR=`pwd`
 
 export ALIAS="remoting"
-export DNAME="OU=Developer,O=Remoting,L=Beijing,C=CN,CN=*"
+export DNAME="C=CN,L=Beijing,OU=Remoting,O=Remoting,CN=*"
+export DNAME_CLIENT="C=CN,L=Beijing,OU=RemotingClient,O=RemotingClient,CN=*"
+export CA_SUBJ="/C=CN/L=Beijing/O=Remoting/OU=Remoting/CN=*"
 
 export SERVER_KEYSTORE="server.jks"
 export SERVER_TRUSTSTORE="serverTrust.jks"
@@ -15,10 +17,12 @@ export CLIENT_SIGN="client.cer"
 
 export KEY_PASSWORD="remoting"
 
+export OPENSSL_CONFIG="/usr/local/etc/openssl/openssl.cnf"
+#export OPENSSL_CONFIG="/etc/ssl/openssl.cnf"
+
 clean(){
-    echo "clean jks and openssl dir"
+    echo "clean jks"
     rm -rf $DIR/jks/*
-    rm -rf $DIR/openssl/*
 }
 
 help(){
@@ -29,7 +33,7 @@ cat <<EOF
     -keyalg   : 指定密钥的算法
     -dname    : 指定证书拥有者信息
                     CN = Common Name   域名        默认：*
-                    OU = OrganizationalUnit        默认：Developer
+                    OU = Organizational Unit        默认：Developer
                     O  = Organization  组织和名称   默认：Remoting
                     L  = Locality      地区        默认：Beijing
                     C  = Country       单位的两字母国家代码 默认：CN
@@ -60,7 +64,7 @@ oneway(){
 
     echo "（3）生成Netty客户端的公钥、私钥和证书仓库：$CLIENT_KEYSTORE"
     keytool -genkey -alias $ALIAS -keysize 2048 -validity 3650 -keyalg RSA \
-        -dname $DNAME -keypass $KEY_PASSWORD -storepass $KEY_PASSWORD -keystore $CLIENT_KEYSTORE
+        -dname $DNAME_CLIENT -keypass $KEY_PASSWORD -storepass $KEY_PASSWORD -keystore $CLIENT_KEYSTORE
 
     echo "（4）将Netty服务端的证书($SERVER_SIGN)导入到客户端的证书仓库($CLIENT_TRUSTSTORE)中："
     keytool -import -noprompt -trustcacerts -alias $ALIAS -file $SERVER_SIGN -storepass $KEY_PASSWORD -keypass $KEY_PASSWORD -keystore $CLIENT_TRUSTSTORE
@@ -76,19 +80,14 @@ twoway(){
     keytool -import -noprompt -trustcacerts -alias $ALIAS -file $CLIENT_SIGN -storepass $KEY_PASSWORD -keypass $KEY_PASSWORD -keystore $SERVER_TRUSTSTORE
 }
 
-outdir(){
-    mkdir jks
-    mkdir openssl
-}
-
 case "$1" in
   twoway)
-    outdir
+    mkdir jks
     cd jks
     twoway
     ;;
   oneway)
-    outdir
+    mkdir jks
     cd jks
     oneway
     ;;
@@ -100,7 +99,7 @@ case "$1" in
   ;;
   *)
     clean
-    outdir
+    mkdir jks
     cd jks
     twoway
 esac
