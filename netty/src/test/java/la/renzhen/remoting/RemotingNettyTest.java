@@ -52,7 +52,7 @@ public abstract class RemotingNettyTest implements LoggerSupport {
     }
 
     @Before
-    public void setup() throws InterruptedException {
+    public void startup() throws InterruptedException {
         server = createRemotingServer();
         server.startup();
         client = createRemotingClient();

@@ -8,6 +8,7 @@ import lombok.SneakyThrows;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,6 +37,20 @@ public class NettyTest extends RemotingNettyTest {
         assert "receiver body body - test".equals(body);
     }
 
+    @Test
+    public void testAsyncBody() throws Exception {
+        RemotingCommand request = RemotingCommand.request(1).setBody("body - test".getBytes());
+
+        CountDownLatch latch = new CountDownLatch(1);
+        client.invokeAsync(request, 3000, (channel, req, response) -> {
+            assert channel.isOK();
+            String body = new String(response.getBody(), Charsets.UTF_8);
+            assert "receiver body body - test".equals(body);
+            latch.countDown();
+        });
+        latch.await();
+    }
+
     @Data
     public static class TestDemoHeader implements CommandCustomHeader {
         String string1;
@@ -53,13 +68,5 @@ public class NettyTest extends RemotingNettyTest {
         RemotingCommand response = client.invokeSync(request, TimeUnit.SECONDS.toMillis(3));
 
         assert response.getCustomHeaders(TestDemoHeader.class).getString1().equals(testDemoHeader.getString1());
-    }
-
-    @Test
-    public void testSecurity() throws Exception {
-
-        RemotingCommand request = RemotingCommand.request(0).setStringHeaders("header - test");
-        RemotingCommand response = client.invokeSync(request, TimeUnit.SECONDS.toMillis(3));
-        assert "receiver header - test".equals(response.getStringHeaders());
     }
 }

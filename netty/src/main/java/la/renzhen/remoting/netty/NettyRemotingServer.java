@@ -22,7 +22,6 @@ import la.renzhen.remoting.netty.coder.CoderProvider;
 import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
 import la.renzhen.remoting.protocol.ClientInfoHeader;
-import la.renzhen.remoting.protocol.CommandCustomHeader;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
 import lombok.Setter;
@@ -156,8 +155,8 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
     }
 
     @Override
-    protected void startupTCPListener() {
-        super.startupTCPListener();
+    protected void startupSocket() {
+        super.startupSocket();
         ServerBootstrap childHandler = this.serverBootstrap.group(this.eventLoopGroupBoss, this.eventLoopGroupSelector)
                 .channel(useEpoll() ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
                 .option(ChannelOption.SO_BACKLOG, 1024)
@@ -207,7 +206,7 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
     }
 
     @Override
-    protected void shutdownTCPListener(boolean interrupted) {
+    protected void shutdownSocket(boolean interrupted) {
         try {
             if (this.eventLoopGroupBoss != null) {
                 this.eventLoopGroupBoss.shutdownGracefully();
@@ -221,7 +220,7 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
                 this.callbackExecutor.shutdown();
             }
 
-            super.shutdownTCPListener(interrupted);
+            super.shutdownSocket(interrupted);
         } catch (Exception e) {
             log.error("NettyRemotingServer shutdown exception, ", e);
         }

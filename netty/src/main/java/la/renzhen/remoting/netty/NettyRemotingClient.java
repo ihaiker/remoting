@@ -15,7 +15,6 @@ import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.protocol.ClientInfoHeader;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.net.SocketAddress;
@@ -25,7 +24,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
@@ -112,34 +110,47 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
                 beforeInitChannel(ch);
                 ChannelPipeline pipeline = ch.pipeline();
                 final CoderProvider coderProvider = getCoderProvider();
-                pipeline.addLast(getEventExecutorGroup(),
-                        coderProvider.encode(), coderProvider.decode(),
+                pipeline.addLast(getEventExecutorGroup(), coderProvider.encode(), coderProvider.decode(),
+
                         new IdleStateHandler(nettyClientConfig.getReaderIdleTimeSeconds(), nettyClientConfig.getWriterIdleTimeSeconds(),
                                 nettyClientConfig.getAllIdleTimeSeconds()),
+
                         new NettyConnectManageHandler(), new NettyClientHandler());
+
                 afterInitChannel(ch);
             }
         };
     }
 
     @Override
-    protected void startupTCPListener() {
-        super.startupTCPListener();
+    protected void startupSocket() {
+        super.startupSocket();
+        createBootstrap();
+        this.connectToServer();
+    }
 
-        Bootstrap handler = this.bootstrap.group(this.eventLoopGroupWorker).channel(NioSocketChannel.class)
+    @Override
+    public boolean reconnect() {
+        try {
+            this.connectToServer();
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    protected Bootstrap createBootstrap() {
+        return this.bootstrap.group(this.eventLoopGroupWorker).channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.SO_KEEPALIVE, false)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, nettyClientConfig.getConnectTimeoutMillis())
                 .option(ChannelOption.SO_SNDBUF, nettyClientConfig.getSocketSndBufSize())
                 .option(ChannelOption.SO_RCVBUF, nettyClientConfig.getSocketRcvBufSize())
                 .handler(getChannelInitializer());
-
-        this.connectToServer();
     }
 
     protected void connectToServer() {
         this.channel = connectToServer(nettyClientConfig.getHost(), nettyClientConfig.getPort());
-        //TODO 自动重连
     }
 
     protected NettyChannel connectToServer(String host, int port) {
@@ -177,7 +188,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
         requestHeader.setUnique(getUnique());
         requestHeader.setModule(getModule());
         Map<String, String> attr = getAttrs();
-        if(attr != null){
+        if (attr != null) {
             requestHeader.setAttrs(new HashMap<>(attr));
         }
 
@@ -213,7 +224,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
     }
 
     @Override
-    protected void shutdownTCPListener(boolean interrupted) {
+    protected void shutdownSocket(boolean interrupted) {
         try {
             this.eventLoopGroupWorker.shutdownGracefully();
 
@@ -221,7 +232,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
                 this.callbackExecutor.shutdown();
             }
 
-            super.shutdownTCPListener(interrupted);
+            super.shutdownSocket(interrupted);
         } catch (Exception e) {
             log.error("close client error", e);
         }
@@ -235,6 +246,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
 
     protected void channelCloseHandler(ChannelHandlerContext ctx) {
     }
+
 
     class NettyClientHandler extends SimpleChannelInboundHandler<RemotingCommand> {
         @Override

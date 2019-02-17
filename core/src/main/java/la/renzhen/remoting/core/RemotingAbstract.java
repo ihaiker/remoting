@@ -510,18 +510,17 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
     @Override
     public void startup() {
         System.out.println(getStartBanner());
-        this.startupTCPListener();
+        this.startupSocket();
         this.eventExecutor.start();
         this.startResponseTimeoutTimer();
     }
 
     @Override
     public boolean isRunning() {
-        //TODO BUG如何判断已经运行了
         return !this.eventExecutor.isStopped();
     }
 
-    protected abstract void startupTCPListener();
+    protected abstract void startupSocket();
 
     @Override
     public void shutdown(boolean interrupted) {
@@ -534,10 +533,10 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
                 log.error("NettyRemotingServer shutdown exception, ", e);
             }
         }
-        this.shutdownTCPListener(interrupted);
+        this.shutdownSocket(interrupted);
     }
 
-    protected abstract void shutdownTCPListener(boolean interrupted);
+    protected abstract void shutdownSocket(boolean interrupted);
 
     public String getStartBanner() {
         return "\n" +

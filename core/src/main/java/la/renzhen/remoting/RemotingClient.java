@@ -20,4 +20,6 @@ public interface RemotingClient<Channel> extends Remoting<Channel>, RemotingServ
     RemotingChannel<Channel> getChannel();
 
     void registerAuth(RemotingAuth auth, String username,String password);
+
+    boolean reconnect();
 }

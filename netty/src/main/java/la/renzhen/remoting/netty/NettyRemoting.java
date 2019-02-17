@@ -40,7 +40,7 @@ public abstract class NettyRemoting extends RemotingAbstract<Channel> {
     }
 
     @Override
-    protected void startupTCPListener() {
+    protected void startupSocket() {
         if (getSecurityProvider() != null) {
             try {
                 getSecurityProvider().preCheck();
@@ -60,7 +60,7 @@ public abstract class NettyRemoting extends RemotingAbstract<Channel> {
     }
 
     @Override
-    protected void shutdownTCPListener(boolean interrupted) {
+    protected void shutdownSocket(boolean interrupted) {
         getEventExecutorGroup().shutdownGracefully();
     }
 
