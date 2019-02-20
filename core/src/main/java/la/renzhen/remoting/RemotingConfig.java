@@ -31,14 +31,4 @@ public class RemotingConfig {
      * the period for search timeout request timeout.
      */
     protected int scanResponseTimerPeriod = 300;
-
-    /**
-     * Server listening port, client link port
-     */
-    protected int port = 8888;
-
-    /**
-     * Server binding host, client link host
-     */
-    protected String host = "127.0.0.1";
 }

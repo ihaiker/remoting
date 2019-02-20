@@ -55,7 +55,7 @@ public abstract class NettyRemoting extends RemotingAbstract<Channel> {
 
         if (getEventExecutorGroup() == null) {
             final int workThreads = 4;
-            setEventExecutorGroup(new DefaultEventExecutorGroup(workThreads, new NamedThreadFactory("NettyCodec" + getModule(), workThreads)));
+            setEventExecutorGroup(new DefaultEventExecutorGroup(workThreads, new NamedThreadFactory("NettyExecutor" + getModule(), workThreads)));
         }
     }
 

@@ -4,7 +4,6 @@ import com.google.common.base.Charsets;
 import la.renzhen.remoting.protocol.CommandCustomHeader;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Data;
-import lombok.SneakyThrows;
 import org.junit.Test;
 
 import java.util.List;
@@ -15,7 +14,7 @@ import java.util.concurrent.TimeUnit;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-28 16:07
  */
-public class NettyTest extends RemotingNettyTest {
+public class NettyTest extends RemotingNettyAbstract {
 
     @Test
     public void testSyncHeader() throws Exception {

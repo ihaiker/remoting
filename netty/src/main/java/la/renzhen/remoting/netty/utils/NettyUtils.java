@@ -6,6 +6,7 @@ import io.netty.channel.ChannelFutureListener;
 import la.renzhen.remoting.LoggerSupport;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 /**
@@ -44,7 +45,13 @@ public class NettyUtils implements LoggerSupport {
         }
         return "";
     }
-    
+
+    public static SocketAddress string2SocketAddress(final String addr) {
+        String[] s = addr.split(":");
+        InetSocketAddress isa = new InetSocketAddress(s[0], Integer.parseInt(s[1]));
+        return isa;
+    }
+
     public static void closeChannel(Channel channel) {
         final String addrRemote = parseChannelRemoteAddr(channel);
         channel.close().addListener(new ChannelFutureListener() {

@@ -18,13 +18,13 @@ public class ClientInfoHeader implements CommandCustomHeader {
 
     String module;
 
-    Map<String, String> attrs;
+    Map<String, String> Attributes;
 
-    public ClientInfoHeader addAttr(String attrKey, String attrValue) {
-        if (attrs == null) {
-            attrs = new HashMap<>();
+    public ClientInfoHeader addAttribute(String attrKey, String attrValue) {
+        if (Attributes == null) {
+            Attributes = new HashMap<>();
         }
-        attrs.put(attrKey, attrValue);
+        Attributes.put(attrKey, attrValue);
         return this;
     }
 }

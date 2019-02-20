@@ -3,8 +3,6 @@ package la.renzhen.remoting;
 import la.renzhen.remoting.netty.NettyRemoting;
 import la.renzhen.remoting.netty.NettyRemotingServer;
 import la.renzhen.remoting.netty.security.jks.InternalSecurityProvider;
-import la.renzhen.remoting.netty.security.jks.JKSConfig;
-import la.renzhen.remoting.netty.security.jks.JKSKeyStoresSecurityProvider;
 import la.renzhen.remoting.protocol.RemotingCommand;
 import org.junit.Test;
 
@@ -14,7 +12,7 @@ import java.util.concurrent.TimeUnit;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-28 16:07
  */
-public class SecurityInternalTest extends RemotingNettyTest {
+public class SecurityInternalTest extends RemotingNettyAbstract {
     @Override
     public void registerTestProcessor(NettyRemoting remoting) {
         super.registerTestProcessor(remoting);

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-28 16:07
  */
-public class SecurityTwoWayTest extends RemotingNettyTest {
+public class SecurityTwoWayTest extends RemotingNettyAbstract {
 
 
     String password = "remoting";

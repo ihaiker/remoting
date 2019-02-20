@@ -30,6 +30,8 @@ public interface RemotingChannel<Channel> {
 
     boolean isWritable();
 
+    void close();
+
     default void writeAndFlush(RemotingCommand command) {
         this.writeAndFlush(command, null);
     }

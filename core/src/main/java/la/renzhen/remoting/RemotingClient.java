@@ -17,9 +17,21 @@ public interface RemotingClient<Channel> extends Remoting<Channel>, RemotingServ
     void invokeOneway(final RemotingCommand request, final long timeoutMillis)
             throws InterruptedException, RemotingException;
 
-    RemotingChannel<Channel> getChannel();
+    RemotingCommand invokeSync(final String address, final RemotingCommand request, final long timeoutMillis)
+            throws InterruptedException, RemotingException;
 
-    void registerAuth(RemotingAuth auth, String username,String password);
+    void invokeAsync(final String address, final RemotingCommand request, final long timeoutMillis, final InvokeCallback invokeCallback)
+            throws InterruptedException, RemotingException;
+
+    void invokeOneway(final String address, final RemotingCommand request, final long timeoutMillis)
+            throws InterruptedException, RemotingException;
+
+
+    RemotingChannel<Channel> selectOrCreateChannel(final String address) throws InterruptedException;
+
+    RemotingChannel<Channel> getChannel() throws InterruptedException;
+
+    void registerAuth(final RemotingAuth auth,final String username,final String password);
 
     boolean reconnect();
 }

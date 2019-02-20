@@ -11,7 +11,7 @@ public interface Remoting<Channel> {
 
     String getUnique();
 
-    Map<String,String> getAttrs();
+    Map<String,String> getAttributes();
 
     String getModule();
 

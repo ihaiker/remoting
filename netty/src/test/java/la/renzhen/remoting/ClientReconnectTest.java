@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-02-17 15:31
  */
-public class ClientReconnectTest extends RemotingNettyTest {
+public class ClientReconnectTest extends RemotingNettyAbstract {
 
     @Test
     public void testReconnect() throws Exception {

@@ -3,7 +3,6 @@ package la.renzhen.remoting;
 import la.renzhen.remoting.netty.NettyRemoting;
 import la.renzhen.remoting.netty.NettyRemotingServer;
 import la.renzhen.remoting.netty.security.StormFrom;
-import la.renzhen.remoting.netty.security.jks.InternalSecurityProvider;
 import la.renzhen.remoting.netty.security.jks.JKSConfig;
 import la.renzhen.remoting.netty.security.jks.JKSKeyStoresSecurityProvider;
 import la.renzhen.remoting.protocol.RemotingCommand;
@@ -15,7 +14,7 @@ import java.util.concurrent.TimeUnit;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-01-28 16:07
  */
-public class SecurityBase64Test extends RemotingNettyTest {
+public class SecurityBase64Test extends RemotingNettyAbstract {
     String password = "remoting";
 
     @Override

@@ -19,6 +19,17 @@ public class NettyServerConfig extends RemotingConfig implements Cloneable {
 
     private boolean useEPollNativeSelector = true;
 
+
+    /**
+     * Server listening port
+     */
+    protected int port = 8888;
+
+    /**
+     * Server binding host
+     */
+    protected String host;
+
     @Override
     public Object clone() throws CloneNotSupportedException {
         return (NettyServerConfig) super.clone();

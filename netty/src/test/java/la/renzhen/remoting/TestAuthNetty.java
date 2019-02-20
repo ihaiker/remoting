@@ -9,7 +9,7 @@ import org.junit.Test;
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
  * @version 2019-02-01 21:51
  */
-public class TestAuthNetty extends RemotingNettyTest {
+public class TestAuthNetty extends RemotingNettyAbstract {
 
     RemotingAuth auth = new MD5Auth();
     RemotingDefender<Channel> defender = new MD5AuthDefender<>(auth);

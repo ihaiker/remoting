@@ -23,6 +23,7 @@ import la.renzhen.remoting.netty.utils.NettyUtils;
 import la.renzhen.remoting.netty.utils.NiceSelector;
 import la.renzhen.remoting.protocol.ClientInfoHeader;
 import la.renzhen.remoting.protocol.RemotingCommand;
+import la.renzhen.remoting.protocol.RemotingSysResponseCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -49,13 +50,10 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
     protected final ConcurrentMap<String /* addr */, NettyChannel> channelTables = new ConcurrentHashMap<>();
 
     protected ExecutorService callbackExecutor;
+    @Getter @Setter protected RuleBasedIpFilter ruleBasedIpFilter;
     //@formatter:on
 
     protected RemotingDefender<Channel> defender;
-
-    @Getter
-    @Setter
-    protected RuleBasedIpFilter ruleBasedIpFilter;
 
     static {
         InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
@@ -233,22 +231,22 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
             NettyChannel channel = (NettyChannel) getChannel(remoteAddr);
             ClientInfoHeader header = request.getCustomHeaders(ClientInfoHeader.class);
             channel.fromHeader(header);
-            log.info("client receiver info: {}", header);
+            log.info("Client reports information: {}", header);
 
             RemotingCommand response = RemotingCommand.response(request);
 
             if (getDefender() != null) {
                 if (!getDefender().checked(channel)) {
                     log.info("the client defender by {}", getDefender().getClass());
-                    response.setError(1,"Refuse to connect");
+                    response.setError(RemotingSysResponseCode.REJECT, "Refuse to connect");
                 }
             }
 
-            if(response.isSuccess()){
+            if (response.isSuccess()) {
                 ctx.pipeline().remove(this);
 
                 ClientInfoHeader responseHeader = new ClientInfoHeader();
-                responseHeader.setUnique(getUnique()).setModule(getModule()).setAttrs(getAttrs());
+                responseHeader.setUnique(getUnique()).setModule(getModule()).setAttributes(NettyRemotingServer.this.getAttributes());
                 response.setCustomHeaders(responseHeader);
             }
 
@@ -274,14 +272,10 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
     }
 
     protected void channelRegisteredHandler(ChannelHandlerContext ctx) {
-        final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
-        NettyChannel nettyChannel = new NettyChannel(ctx);
-        channelTables.put(remoteAddress, nettyChannel);
-    }
 
+    }
     protected void channelUnregisteredHandler(ChannelHandlerContext ctx) {
-        final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
-        channelTables.remove(remoteAddress);
+
     }
 
     class NettyConnectManageHandler extends ChannelDuplexHandler {
@@ -290,6 +284,8 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
             log.info("NETTY SERVER PIPELINE: channelRegistered {}", remoteAddress);
             super.channelRegistered(ctx);
+            NettyChannel nettyChannel = new NettyChannel(ctx);
+            channelTables.put(remoteAddress, nettyChannel);
             channelRegisteredHandler(ctx);
         }
 
@@ -298,6 +294,7 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
             log.info("NETTY SERVER PIPELINE: channelUnregistered, the channel {}", remoteAddress);
             super.channelUnregistered(ctx);
+            channelTables.remove(remoteAddress);
             channelUnregisteredHandler(ctx);
         }
 
@@ -306,7 +303,6 @@ public class NettyRemotingServer extends NettyRemoting implements RemotingServer
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
             log.info("NETTY SERVER PIPELINE: channelActive, the channel {}", remoteAddress);
             super.channelActive(ctx);
-
             RemotingChannel<Channel> nettyChannel = getChannel(remoteAddress);
             putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.CONNECT, nettyChannel));
         }

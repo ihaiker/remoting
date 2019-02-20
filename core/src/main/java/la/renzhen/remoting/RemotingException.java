@@ -18,7 +18,9 @@ public class RemotingException extends RuntimeException {
          * Send command timed out
          */
         Timeout,
-        TooMuchRequest
+        TooMuchRequest,
+
+        NotSupportServer
     }
 
     private Type remotingExceptionType;

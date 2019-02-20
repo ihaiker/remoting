@@ -17,13 +17,15 @@ import la.renzhen.remoting.protocol.RemotingCommand;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.net.SocketAddress;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author <a href="mailto:wo@renzhen.la">haiker</a>
@@ -39,23 +41,37 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
 
     private final EventLoopGroup eventLoopGroupWorker;
 
-    private volatile NettyChannel channel;
-
     /** Invoke the callback methods in this executor when process response. */
     private ExecutorService callbackExecutor;
 
     @Getter private RemotingAuth auth;
+
     //@formatter:on
 
-    public NettyRemotingClient(final NettyClientConfig nettyClientConfig) {
-        this(UUID.randomUUID().toString(), nettyClientConfig);
+    private final Lock channelLock = new ReentrantLock();
+
+    private final AtomicReference<String> serverAddressChoosed = new AtomicReference<String>();
+    private final AtomicReference<List<String>> serverAddressSupported = new AtomicReference<List<String>>();
+
+    private static int randomSelectServerIndex() {
+        Random r = new Random();
+        return Math.abs(r.nextInt() % 999) % 999;
     }
 
-    public NettyRemotingClient(final String clientName, final NettyClientConfig nettyClientConfig) {
+    private final AtomicInteger serverIndex = new AtomicInteger(randomSelectServerIndex());
+    private final ConcurrentMap<String /* addr */, NettyChannel> channelTables = new ConcurrentHashMap<String, NettyChannel>();
+
+
+    public NettyRemotingClient(@NotNull @Size(min = 1) final List<String> serverAddress, final NettyClientConfig nettyClientConfig) {
+        this(UUID.randomUUID().toString(), serverAddress, nettyClientConfig);
+    }
+
+    public NettyRemotingClient(final String clientName, @NotNull @Size(min = 1) final List<String> serverAddress, final NettyClientConfig nettyClientConfig) {
         super(nettyClientConfig);
         setModule("RemotingClient");
         this.clientName = clientName;
         this.nettyClientConfig = nettyClientConfig;
+        this.serverAddressSupported.set(serverAddress);
 
         final int callThreadSize = nettyClientConfig.getCallbackThreadSize();
         if (callThreadSize > 0) {
@@ -65,27 +81,59 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
     }
 
     @Override
-    public RemotingChannel<Channel> getChannel() {
-        return channel;
-    }
-
-    protected RemotingChannel<Channel> selectChannel(final String address) {
-        return this.channel;
-    }
-
-    @Override
     public RemotingCommand invokeSync(RemotingCommand request, long timeoutMillis) throws InterruptedException, RemotingException {
-        return this.invokeSyncHandler(getChannel(), request, timeoutMillis);
+        RemotingChannel<Channel> channel = getChannel();
+        if (channel == null) {
+            throw new RemotingException(RemotingException.Type.Connect, "The service you selected is disconnect.");
+        }
+        return this.invokeSyncHandler(channel, request, timeoutMillis);
     }
 
     @Override
     public void invokeAsync(RemotingCommand request, long timeoutMillis, InvokeCallback invokeCallback) throws InterruptedException, RemotingException {
-        this.invokeAsyncHandler(getChannel(), request, timeoutMillis, invokeCallback);
+        RemotingChannel<Channel> channel = getChannel();
+        if (channel == null) {
+            throw new RemotingException(RemotingException.Type.Connect, "The service you selected is disconnect.");
+        }
+        this.invokeAsyncHandler(channel, request, timeoutMillis, invokeCallback);
     }
 
     @Override
     public void invokeOneway(RemotingCommand request, long timeoutMillis) throws InterruptedException, RemotingException {
-        this.invokeOnewayHandler(getChannel(), request, timeoutMillis);
+        RemotingChannel<Channel> channel = getChannel();
+        if (channel == null) {
+            throw new RemotingException(RemotingException.Type.Connect, "The service you selected is disconnect.");
+        }
+        this.invokeOnewayHandler(channel, request, timeoutMillis);
+    }
+
+    private RemotingChannel<Channel> checkAddressAndGetChannel(final String address) throws InterruptedException {
+        if (serverAddressSupported.get().contains(address)) {
+            throw new RemotingException(RemotingException.Type.NotSupportServer, "The server address provided is not supported.");
+        }
+        RemotingChannel<Channel> channel = selectOrCreateChannel(address);
+        if (channel == null) {
+            throw new RemotingException(RemotingException.Type.Connect, "The service you selected is disconnect.");
+        }
+        return channel;
+    }
+
+    @Override
+    public RemotingCommand invokeSync(final String address, RemotingCommand request, long timeoutMillis) throws InterruptedException, RemotingException {
+        RemotingChannel<Channel> channel = checkAddressAndGetChannel(address);
+        return this.invokeSyncHandler(channel, request, timeoutMillis);
+    }
+
+    @Override
+    public void invokeAsync(String address, RemotingCommand request, long timeoutMillis, InvokeCallback invokeCallback) throws InterruptedException, RemotingException {
+        RemotingChannel<Channel> channel = checkAddressAndGetChannel(address);
+        this.invokeAsyncHandler(channel, request, timeoutMillis, invokeCallback);
+    }
+
+    @Override
+    public void invokeOneway(String address, RemotingCommand request, long timeoutMillis) throws InterruptedException, RemotingException {
+        RemotingChannel<Channel> channel = checkAddressAndGetChannel(address);
+        this.invokeOnewayHandler(channel, request, timeoutMillis);
     }
 
     @Override
@@ -126,15 +174,30 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
     protected void startupSocket() {
         super.startupSocket();
         createBootstrap();
-        this.connectToServer();
+
+        if (!reconnect()) {
+            throw new RemotingException(RemotingException.Type.Connect, "Connection server exception");
+        }
     }
 
+    /**
+     * Reconnect all services。This method will not throw an exception, will return false if an exception happen.
+     *
+     * @return True All services are successfully connected, otherwise some connections are unsuccessful
+     */
     @Override
     public boolean reconnect() {
         try {
-            this.connectToServer();
-            return false;
+            List<String> addressSupport = this.serverAddressSupported.get();
+            if (null != addressSupport && !addressSupport.isEmpty()) {
+                for (int i = 0; i < addressSupport.size(); i++) {
+                    String address = addressSupport.get(i);
+                    selectOrCreateChannel(address);
+                }
+            }
+            return true;
         } catch (Exception e) {
+            log.error("Reconnect service exception", e);
             return false;
         }
     }
@@ -149,36 +212,111 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
                 .handler(getChannelInitializer());
     }
 
-    protected void connectToServer() {
-        this.channel = connectToServer(nettyClientConfig.getHost(), nettyClientConfig.getPort());
+    @Override
+    public RemotingChannel<Channel> selectOrCreateChannel(final String address) throws InterruptedException {
+        if (null == address) {
+            return getChannel();
+        }
+
+        RemotingChannel<Channel> channel = channelTables.get(address);
+        if (channel != null && channel.isOK()) {
+            return channel;
+        }
+
+        return createChannel(address);
     }
 
-    protected NettyChannel connectToServer(String host, int port) {
-        String address = host + ":" + port;
-        ChannelFuture channelFuture = this.bootstrap.connect(host, port);
-        try {
-            channelFuture.awaitUninterruptibly(nettyClientConfig.getConnectTimeoutMillis());
-        } catch (Exception e) {
-            throw new RemotingException(RemotingException.Type.Connect, address, e);
-        }
-        if (!channelFuture.channel().isActive()) {
-            throw new RemotingException(RemotingException.Type.Connect, "Cannot connect to the server: " + address);
-        }
-        NettyChannel channel = new NettyChannel(channelFuture);
-        log.info("connect to server: {}", address);
 
-        ClientInfoHeader header = reportClient(channel);
-        log.info("response server info: unique:{}, module:{}, attrs:{}",
-                header.getUnique(), header.getModule(), header.getAttrs());
+    @Override
+    public RemotingChannel<Channel> getChannel() throws InterruptedException {
+        String address = serverAddressChoosed.get();
+        if (null != address) {
+            NettyChannel channel = this.channelTables.get(address);
+            if (channel != null && channel.isOK()) {
+                return channel;
+            }
+        }
+        final List<String> supportAddress = this.serverAddressSupported.get();
+        if (this.channelLock.tryLock(nettyClientConfig.getConnectTimeoutMillis(), TimeUnit.MILLISECONDS)) {
+            try {
+                address = this.serverAddressChoosed.get();
+                if (address != null) {
+                    NettyChannel channel = this.channelTables.get(address);
+                    if (channel != null && channel.isOK()) {
+                        return channel;
+                    }
+                }
+
+                if (supportAddress != null && !supportAddress.isEmpty()) {
+                    for (int i = 0; i < supportAddress.size(); i++) {
+                        int index = Math.abs(this.serverIndex.incrementAndGet()) % supportAddress.size();
+                        String newAddr = supportAddress.get(index);
+                        this.serverAddressChoosed.set(newAddr);
+                        log.info("new name server is chosen. OLD: {} , NEW: {}. serverIndex = {}", address, newAddr, serverIndex.get());
+                        NettyChannel channelNew = this.createChannel(newAddr);
+                        if (channelNew != null && channelNew.isOK()) {
+                            return channelNew;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("create server channel exception", e);
+            } finally {
+                this.channelLock.unlock();
+            }
+        } else {
+            log.warn("try to lock server, but timeout, {}ms", nettyClientConfig.getConnectTimeoutMillis());
+        }
+        return null;
+    }
+
+    protected NettyChannel createChannel(String address) throws InterruptedException {
+        NettyChannel channel = channelTables.get(address);
+        if (channel != null && channel.isOK()) {
+            return channel;
+        }
+
+        if (channelLock.tryLock(nettyClientConfig.getConnectTimeoutMillis(), TimeUnit.MILLISECONDS)) {
+            try {
+                channel = channelTables.get(address);
+                if (channel != null) {
+                    if (channel.isOK()) {
+                        return channel;
+                    } else {
+                        channelTables.remove(address);
+                        channel.close();
+                    }
+                }
+
+                ChannelFuture channelFuture = this.bootstrap.connect(NettyUtils.string2SocketAddress(address));
+                channel = new NettyChannel(channelFuture);
+                if (!channelFuture.awaitUninterruptibly(nettyClientConfig.getConnectTimeoutMillis())) {
+                    throw new RemotingException(RemotingException.Type.Connect, "Cannot connect to the server: " + address);
+                }
+                if (!channel.isOK()) {
+                    throw new RemotingException(RemotingException.Type.Connect, "Cannot connect to the server: " + address);
+                }
+                channelTables.put(address, channel);
+
+                ClientInfoHeader serverHeaderResponse = reportClient(channel);
+                log.info("server response info unique:{}, module:{}, attributes:{}",
+                        serverHeaderResponse.getUnique(), serverHeaderResponse.getModule(), serverHeaderResponse.getAttributes());
+            } catch (RemotingException e) {
+                channelTables.remove(address);
+                throw e;
+            } finally {
+                channelLock.unlock();
+            }
+        }
         return channel;
     }
 
     @Override
-    public void registerAuth(RemotingAuth auth, String username, String password) {
+    public void registerAuth(final RemotingAuth auth, final String username, final String password) {
         this.auth = auth;
         if (this.auth != null) {
-            this.setAttr(RemotingAuth.AUTH_USERNAME, username);
-            this.setAttr(RemotingAuth.AUTH_PASSWORD, password);
+            this.setAttribute(RemotingAuth.AUTH_USERNAME, username);
+            this.setAttribute(RemotingAuth.AUTH_PASSWORD, password);
         }
     }
 
@@ -187,22 +325,12 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
         ClientInfoHeader requestHeader = new ClientInfoHeader();
         requestHeader.setUnique(getUnique());
         requestHeader.setModule(getModule());
-        Map<String, String> attr = getAttrs();
+        Map<String, String> attr = this.getAttributes();
         if (attr != null) {
-            requestHeader.setAttrs(new HashMap<>(attr));
+            requestHeader.setAttributes(new HashMap<>(attr));
         }
 
-        final RemotingAuth auth = getAuth();
-        if (auth != null) {
-            final Map<String, String> attrs = requestHeader.getAttrs();
-            String authUsername = Optional.ofNullable(attrs).map(s -> s.get(RemotingAuth.AUTH_USERNAME)).orElse("");
-            String authPassword = Optional.ofNullable(attrs).map(s -> s.get(RemotingAuth.AUTH_PASSWORD)).orElse("");
-            log.info("enable auth: {} {}", channel.address(), authUsername);
-            String authSignature = auth.signature(authUsername, authPassword);
-            attrs.remove(RemotingAuth.AUTH_PASSWORD);
-            attrs.put(RemotingAuth.AUTH_SIGNATURE, authSignature);
-            requestHeader.setAttrs(attrs);
-        }
+        appendReportHeaderAttributes(channel, requestHeader);
 
         log.info("report client info to server.");
         RemotingCommand request = RemotingCommand.request(0).setCustomHeaders(requestHeader);
@@ -211,7 +339,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
             if (response.isSuccess()) {
                 ClientInfoHeader responseHeader = response.getCustomHeaders(ClientInfoHeader.class);
                 channel.fromHeader(responseHeader);
-                return requestHeader;
+                return responseHeader;
             } else {
                 String error = response.getError();
                 throw new RemotingException(RemotingException.Type.Auth, error);
@@ -220,6 +348,20 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
             throw e;
         } catch (Exception e) {
             throw new RemotingException(RemotingException.Type.Connect, e);
+        }
+    }
+
+    protected void appendReportHeaderAttributes(NettyChannel channel, ClientInfoHeader clientInfoHeader) {
+        final RemotingAuth auth = getAuth();
+        if (auth != null) {
+            final Map<String, String> attrs = clientInfoHeader.getAttributes();
+            String authUsername = Optional.ofNullable(attrs).map(s -> s.get(RemotingAuth.AUTH_USERNAME)).orElse("");
+            String authPassword = Optional.ofNullable(attrs).map(s -> s.get(RemotingAuth.AUTH_PASSWORD)).orElse("");
+            log.info("enable auth: {} {}", channel.address(), authUsername);
+            String authSignature = auth.signature(authUsername, authPassword);
+            attrs.remove(RemotingAuth.AUTH_PASSWORD);
+            attrs.put(RemotingAuth.AUTH_SIGNATURE, authSignature);
+            clientInfoHeader.setAttributes(attrs);
         }
     }
 
@@ -247,12 +389,12 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
     protected void channelCloseHandler(ChannelHandlerContext ctx) {
     }
 
-
     class NettyClientHandler extends SimpleChannelInboundHandler<RemotingCommand> {
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, RemotingCommand msg) throws Exception {
             final String address = NettyUtils.parseChannelRemoteAddr(ctx.channel());
-            processMessageReceived(selectChannel(address), msg);
+            NettyChannel channel = channelTables.get(address);
+            processMessageReceived(channel, msg);
         }
     }
 
@@ -263,17 +405,19 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
             final String remote = remoteAddress == null ? "UNKNOWN" : NettyUtils.parseSocketAddressAddr(remoteAddress);
             log.info("NETTY CLIENT PIPELINE: CONNECT  {} => {}", local, remote);
             super.connect(ctx, remoteAddress, localAddress, promise);
+            NettyChannel channel = channelTables.get(remote);
             channelConnectHandler(ctx);
-            putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.CONNECT, selectChannel(remote)));
+            putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.CONNECT, channel));
         }
 
         @Override
         public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
             log.info("NETTY CLIENT PIPELINE: DISCONNECT {}", remoteAddress);
-            putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.CLOSE, selectChannel(remoteAddress)));
+            NettyChannel channel = channelTables.get(remoteAddress);
+            putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.CLOSE, channel));
             channelDisconnectHandler(ctx);
-            closeChannel(selectChannel(remoteAddress));
+            closeChannel(channel);
             super.disconnect(ctx, promise);
         }
 
@@ -281,9 +425,10 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
         public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
             log.info("NETTY CLIENT PIPELINE: CLOSE {}", remoteAddress);
-            putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.CLOSE, selectChannel(remoteAddress)));
+            NettyChannel channel = new NettyChannel(ctx);
+            putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.CLOSE, channel));
             channelCloseHandler(ctx);
-            closeChannel(selectChannel(remoteAddress));
+            closeChannel(channel);
             super.close(ctx, promise);
         }
 
@@ -294,8 +439,9 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
                 if (event.state().equals(IdleState.ALL_IDLE)) {
                     final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
                     log.warn("NETTY CLIENT PIPELINE: IDLE exception [{}]", remoteAddress);
-                    putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.IDLE, selectChannel(remoteAddress)));
-                    closeChannel(selectChannel(remoteAddress));
+                    NettyChannel channel = channelTables.get(remoteAddress);
+                    putNettyEvent(new ChannelEvent<>(ChannelEvent.Type.IDLE, channel));
+                    closeChannel(new NettyChannel(ctx));
                 }
             }
             ctx.fireUserEventTriggered(evt);
@@ -304,10 +450,9 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
-            log.warn("NETTY CLIENT PIPELINE: exceptionCaught {}", remoteAddress);
-            log.warn("NETTY CLIENT PIPELINE: exceptionCaught exception.", cause);
-            closeChannel(selectChannel(remoteAddress));
-            putNettyEvent(new ChannelEvent<Channel>(ChannelEvent.Type.EXCEPTION, selectChannel(remoteAddress)).setData(cause));
+            log.warn("NETTY CLIENT PIPELINE: exceptionCaught exception {}.",remoteAddress, cause);
+            closeChannel(channelTables.get(remoteAddress));
+            putNettyEvent(new ChannelEvent<Channel>(ChannelEvent.Type.EXCEPTION, channelTables.get(remoteAddress)).setData(cause));
         }
     }
 

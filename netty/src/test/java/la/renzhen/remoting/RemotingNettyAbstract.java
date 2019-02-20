@@ -1,6 +1,7 @@
 package la.renzhen.remoting;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import io.netty.channel.Channel;
 import la.renzhen.remoting.netty.*;
 import la.renzhen.remoting.protocol.RemotingCommand;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -16,7 +18,7 @@ import java.util.concurrent.Executors;
  * @version 2019-01-28 15:46
  */
 
-public abstract class RemotingNettyTest implements LoggerSupport {
+public abstract class RemotingNettyAbstract implements LoggerSupport {
     protected RemotingServer server;
     protected RemotingClient client;
 
@@ -25,12 +27,16 @@ public abstract class RemotingNettyTest implements LoggerSupport {
     public RemotingServer createRemotingServer() throws InterruptedException {
         NettyServerConfig config = new NettyServerConfig();
         NettyRemotingServer remotingServer = new NettyRemotingServer(config);
+        remotingServer.setModule("Server");
         registerTestProcessor(remotingServer);
         return remotingServer;
     }
 
     public RemotingClient createRemotingClient() {
-        NettyRemotingClient client = new NettyRemotingClient(new NettyClientConfig());
+        NettyClientConfig config = new NettyClientConfig();
+        List<String> serverAddress = Lists.newArrayList("127.0.0.1:8888","localhost:8888");
+        NettyRemotingClient client = new NettyRemotingClient(serverAddress, config);
+        client.setModule("Client");
         registerTestProcessor(client);
         return client;
     }

@@ -25,7 +25,7 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
     private String module = "Remoting";
     @Setter
     @Getter
-    Map<String, String> attrs;
+    Map<String, String> attributes;
 
     /**
      * Semaphore to limit maximum number of on-going asynchronous requests, which protects system memory footprint.
@@ -85,11 +85,11 @@ public abstract class RemotingAbstract<Channel> implements Remoting<Channel>, Re
         }
     }
 
-    public void setAttr(String key, String value) {
-        if (this.attrs == null) {
-            this.attrs = new HashMap<>();
+    public void setAttribute(String key, String value) {
+        if (this.attributes == null) {
+            this.attributes = new HashMap<>();
         }
-        this.attrs.put(key, value);
+        this.attributes.put(key, value);
     }
 
 

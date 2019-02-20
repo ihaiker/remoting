@@ -49,7 +49,7 @@ public class NettyChannel implements RemotingChannel<Channel> {
 
     @Override
     public boolean isOK() {
-        return channel != null && channel.isActive();
+        return channel != null && channel.isOpen() && channel.isActive();
     }
 
     @Override
@@ -57,10 +57,17 @@ public class NettyChannel implements RemotingChannel<Channel> {
         return getChannel().isWritable();
     }
 
+    @Override
+    public void close() {
+        if(channel != null){
+            NettyUtils.closeChannel(channel);
+        }
+    }
+
     public void fromHeader(ClientInfoHeader header){
         setUnique(header.getUnique());
         setModule(header.getModule());
-        setAttrs(header.getAttrs());
+        setAttrs(header.getAttributes());
     }
 
     @Override
