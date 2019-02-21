@@ -15,7 +15,15 @@ public interface Remoting<Channel> {
 
     String getModule();
 
+    default void registerProcessor(final int requestCode, final RequestProcessor<Channel> processor){
+        registerProcessor(requestCode,processor,null);
+    }
+
     void registerProcessor(final int requestCode, final RequestProcessor<Channel> processor, final ExecutorService executor);
+
+    default void registerDefaultProcessor(final RequestProcessor<Channel> processor){
+        registerDefaultProcessor(processor,null);
+    }
 
     void registerDefaultProcessor(final RequestProcessor<Channel> processor, final ExecutorService executor);
 
