@@ -104,4 +104,4 @@ gradle-app.setting
 .glide/
 build
 
-netty-demo
+gradle.properties

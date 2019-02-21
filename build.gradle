@@ -1,5 +1,5 @@
-group 'la.renzhen'
-version '0.0.1-SNAPSHOT'
+group 'la.renzhen.basis'
+version '0.1.0-SNAPSHOT'
 
 allprojects {
     repositories {
@@ -9,9 +9,18 @@ allprojects {
     }
 }
 
+ext {
+    snapshotRepositoryPath = "$snapshotRepository"
+    repositoryPath = "$repository"
+    ossUsername = "$ossUsername"
+    ossPassword = "$ossPassword"
+}
+
 subprojects {
     apply plugin: "java"
     apply plugin: "idea"
+    apply plugin: "maven"
+    apply plugin: "signing"
 
     ext {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -46,10 +55,10 @@ subprojects {
         compile "com.google.guava:guava:25.1-jre"
         compile "org.slf4j:slf4j-api:1.7.25"
         compile "javax.validation:validation-api:2.0.1.Final"
-        compile "org.projectlombok:lombok-utils:1.18.4"
 
         testCompile "junit:junit:4.12"
         optional "org.projectlombok:lombok:1.18.4"
+        optional "org.projectlombok:lombok-utils:1.18.4"
     }
 
     task sourceJar(type: Jar) {
@@ -65,5 +74,65 @@ subprojects {
     artifacts {
         archives sourceJar
         archives javadocJar
+    }
+
+
+
+
+    uploadArchives {
+        doFirst {
+            println(rootProject.getProperties())
+        }
+        signing {
+            sign configurations.archives
+        }
+        configuration = configurations.archives
+        repositories {
+            mavenDeployer {
+                snapshotRepository(url: snapshotRepositoryPath) {
+                    authentication(userName: ossUsername, password: ossPassword)
+                }
+                repository(url: repositoryPath) {
+                    authentication(userName: ossUsername, password: ossPassword)
+                }
+                beforeDeployment {
+                    MavenDeployment deployment -> signing.signPom(deployment)
+                }
+
+                pom.project {
+                    artifactId "${project.name}"
+                    groupId "${rootProject.group}"
+                    version "${rootProject.version}"
+                    packaging "jar"
+
+                    name "${project.name}"
+                    description "${project.name}"
+
+                    url "https://github.com/ihaiker/remoting.git"
+                    inceptionYear "20190201"
+                    scm {
+                        connection 'scm:git:https://github.com/ihaiker/remoting.git'
+                        developerConnection 'scm:git:https://github.com/ihaiker/remoting.git'
+                        url 'https://github.com/ihaiker/remoting.git'
+                    }
+                    developers {
+                        developer {
+                            id 'ihaiker'
+                            name 'haiker'
+                            email 'wo@reznzhen.la'
+                        }
+                    }
+
+                    licenses {
+                        license {
+                            name 'The Apache License, Version 2.0'
+                            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                            distribution 'repo'
+                        }
+                    }
+
+                }
+            }
+        }
     }
 }

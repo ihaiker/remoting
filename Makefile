@@ -5,6 +5,9 @@
 build:
 	./gradlew build -x test
 
+upload:
+	./gradlew upload -x test
+
 help:
 	@echo "Usage:"
 
