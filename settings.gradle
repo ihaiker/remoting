@@ -1,7 +1,4 @@
 rootProject.name = 'remoting'
 
 include 'core'
-findProject(':core')?.name = 'remoting-core'
 include 'netty'
-findProject(':netty')?.name = 'remoting-netty'
-

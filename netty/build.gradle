@@ -1,10 +1,10 @@
-plugins {
-    id 'java'
-}
+apply plugin: "java"
+apply plugin: "maven"
+apply plugin: "signing"
 
 dependencies {
-    compile project(":remoting-core")
+    compile project(":core")
     compile "io.netty:netty-all:4.1.33.Final"
-
+    
     testCompile 'ch.qos.logback:logback-classic:1.2.3'
 }
