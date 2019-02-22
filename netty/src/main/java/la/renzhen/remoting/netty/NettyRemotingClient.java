@@ -59,7 +59,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
     }
 
     private final AtomicInteger serverIndex = new AtomicInteger(randomSelectServerIndex());
-    private final ConcurrentMap<String /* addr */, NettyChannel> channelTables = new ConcurrentHashMap<String, NettyChannel>();
+    private final Map<String /* addr */, NettyChannel> channelTables = new HashMap<String, NettyChannel>();
 
 
     public NettyRemotingClient(@NotNull @Size(min = 1) final List<String> serverAddress, final NettyClientConfig nettyClientConfig) {
