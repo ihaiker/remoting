@@ -249,7 +249,13 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
 
                 if (supportAddress != null && !supportAddress.isEmpty()) {
                     for (int i = 0; i < supportAddress.size(); i++) {
-                        int index = Math.abs(this.serverIndex.incrementAndGet()) % supportAddress.size();
+                        //int index = Math.abs(this.serverIndex.incrementAndGet()) % supportAddress.size(); //fixbug: 并不是什么情况下都是大于冷 0
+                        int index = this.serverIndex.incrementAndGet();
+                        if (index < 0) {
+                            index = 0;
+                        }
+                        index = index % supportAddress.size();
+
                         String newAddr = supportAddress.get(index);
                         this.serverAddressChoosed.set(newAddr);
                         log.info("new name server is chosen. OLD: {} , NEW: {}. serverIndex = {}", address, newAddr, serverIndex.get());
@@ -450,7 +456,7 @@ public class NettyRemotingClient extends NettyRemoting implements RemotingClient
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             final String remoteAddress = NettyUtils.parseChannelRemoteAddr(ctx.channel());
-            log.warn("NETTY CLIENT PIPELINE: exceptionCaught exception {}.",remoteAddress, cause);
+            log.warn("NETTY CLIENT PIPELINE: exceptionCaught exception {}.", remoteAddress, cause);
             closeChannel(channelTables.get(remoteAddress));
             putNettyEvent(new ChannelEvent<Channel>(ChannelEvent.Type.EXCEPTION, channelTables.get(remoteAddress)).setData(cause));
         }
